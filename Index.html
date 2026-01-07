@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Conductores Pro</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+
+<body>
+
+<!-- LOGIN -->
+<div id="login" class="login-card">
+  <img src="logo.png" class="logo">
+  <h2>Conductores Pro</h2>
+
+  <select id="userSelect">
+    <option value="">Seleccionar usuario</option>
+    <option value="coordinadora">Coordinadora</option>
+    <option value="conductor1">Conductor 1</option>
+    <option value="conductor2">Conductor 2</option>
+    <option value="conductor3">Conductor 3</option>
+    <option value="conductor4">Conductor 4</option>
+  </select>
+
+  <input type="password" id="password" placeholder="Contraseña">
+  <button onclick="login()">Ingresar</button>
+</div>
+
+<!-- APP -->
+<div id="app" class="app hidden">
+
+  <aside class="sidebar">
+    <img src="logo.png" class="logo">
+    <h3 id="roleTitle"></h3>
+
+    <button onclick="showSection('dashboard')">Panel</button>
+    <button onclick="showSection('inventario')">Inventario</button>
+    <button id="ventasBtn" onclick="showSection('ventas')">Ventas</button>
+    <button onclick="showSection('facturas')">Facturas</button>
+
+    <button class="logout" onclick="logout()">Salir</button>
+  </aside>
+
+  <main class="content">
+
+    <!-- DASHBOARD -->
+    <div id="dashboard" class="card">
+      <h2>Bienvenido</h2>
+      <p id="welcome"></p>
+    </div>
+
+    <!-- INVENTARIO -->
+    <div id="inventario" class="card hidden">
+
+      <!-- COORDINADORA -->
+      <div id="assignInventory" class="hidden">
+        <h3>Asignar inventario diario</h3>
+
+        <select id="invDriver">
+          <option value="conductor1">Conductor 1</option>
+          <option value="conductor2">Conductor 2</option>
+          <option value="conductor3">Conductor 3</option>
+          <option value="conductor4">Conductor 4</option>
+        </select>
+
+        <input id="invProduct" placeholder="Producto">
+        <input id="invQty" type="number" placeholder="Cantidad">
+
+        <button onclick="assignInventory()">Asignar</button>
+      </div>
+
+      <h3>Inventario del día</h3>
+      <div id="inventoryList"></div>
+    </div>
+
+    <!-- VENTAS -->
+    <div id="ventas" class="card hidden">
+      <h3>Registrar venta</h3>
+
+      <input id="businessName" placeholder="Nombre del negocio">
+
+      <div class="row">
+        <input id="saleProduct" placeholder="Producto">
+        <input id="saleQty" type="number" placeholder="Cantidad">
+        <input id="salePrice" type="number" placeholder="Precio">
+        <button onclick="addSaleItem()">Agregar</button>
+      </div>
+
+      <div id="saleList"></div>
+
+      <h3>Total: $<span id="total">0</span></h3>
+      <button onclick="finalizeSale()">Generar factura</button>
+    </div>
+
+    <!-- FACTURAS -->
+    <div id="facturas" class="card hidden">
+      <h3>Facturas</h3>
+      <div id="invoiceList"></div>
+    </div>
+
+  </main>
+</div>
+
+<script src="app.js"></script>
+</body>
+</html>

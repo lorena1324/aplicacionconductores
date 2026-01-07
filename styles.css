@@ -1,0 +1,216 @@
+/* =========================
+   RESET & BASE
+========================= */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: "Segoe UI", Arial, sans-serif;
+  background: #0f172a;
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+/* =========================
+   UTILIDADES
+========================= */
+.hidden {
+  display: none !important;
+}
+
+.logo {
+  width: 120px;
+  margin-bottom: 20px;
+}
+
+/* =========================
+   LOGIN
+========================= */
+.login-card {
+  background: #ffffff;
+  width: 360px;
+  padding: 32px;
+  border-radius: 18px;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.45);
+  text-align: center;
+}
+
+.login-card h2 {
+  margin: 10px 0 20px;
+  color: #020617;
+}
+
+.login-card select,
+.login-card input {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 14px;
+  border-radius: 10px;
+  border: 1px solid #cbd5e1;
+  font-size: 14px;
+}
+
+.login-card input:focus,
+.login-card select:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.login-card button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 16px;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.login-card button:hover {
+  background: #1d4ed8;
+}
+
+/* =========================
+   APP LAYOUT
+========================= */
+.app {
+  width: 96%;
+  max-width: 1400px;
+  height: 92vh;
+  background: #f8fafc;
+  border-radius: 24px;
+  display: flex;
+  overflow: hidden;
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.55);
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+.sidebar {
+  width: 260px;
+  background: #020617;
+  color: #ffffff;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.sidebar h3 {
+  margin: 10px 0 20px;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+
+.sidebar button {
+  width: 100%;
+  padding: 12px;
+  margin-bottom: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #2563eb;
+  color: #ffffff;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.2s ease, transform 0.1s ease;
+}
+
+.sidebar button:hover {
+  background: #1d4ed8;
+  transform: translateX(3px);
+}
+
+.sidebar .logout {
+  background: #ef4444;
+}
+
+.sidebar .logout:hover {
+  background: #dc2626;
+}
+
+/* =========================
+   CONTENT
+========================= */
+.content {
+  flex: 1;
+  padding: 30px;
+  overflow-y: auto;
+}
+
+.content h2,
+.content h3 {
+  margin-top: 0;
+  color: #020617;
+}
+
+/* =========================
+   CARDS
+========================= */
+.card {
+  background: #ffffff;
+  padding: 24px;
+  border-radius: 18px;
+  margin-bottom: 22px;
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.12);
+}
+
+/* =========================
+   ROWS / LISTAS
+========================= */
+.row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.row input {
+  flex: 1;
+  padding: 10px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+}
+
+.row input:focus {
+  outline: none;
+  border-color: #2563eb;
+}
+
+.row button {
+  padding: 10px 16px;
+  background: #10b981;
+  border: none;
+  border-radius: 8px;
+  color: #ffffff;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.row button:hover {
+  background: #059669;
+}
+
+/* =========================
+   FACTURAS / LISTAS
+========================= */
+#invoiceList .row {
+  justify-content: space-between;
+  background: #f1f5f9;
+  padding: 12px 14px;
+  border-radius: 10px;
+}
+
+#invoiceList button {
+  background: #2563eb;
+}
+
+#invoiceList button:hover {
+  background: #1d4ed8;
+}
