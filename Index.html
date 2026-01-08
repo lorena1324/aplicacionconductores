@@ -38,28 +38,15 @@
         <button onclick="showSection('inventario')" id="btnInventario">
           Asignar Inventario
         </button>
-        <button
-          onclick="showSection('gestionInventario')"
-          id="btnGestionInventario"
-          class="coordinator-only hidden"
-        >
-          Gestionar Inventario
+        <button onclick="showSection('facturas')" id="btnFacturas">
+          Facturas
         </button>
         <button
-          onclick="showSection('controlMovimientos')"
-          id="btnControlMovimientos"
-          class="coordinator-only hidden"
+          id="ventasBtn"
+          onclick="showSection('ventas')"
+          class="driver-only"
         >
-          Control de Movimientos
-        </button>
-        <button id="ventasBtn" onclick="showSection('ventas')">Ventas</button>
-        <button onclick="showSection('facturas')">Facturas</button>
-        <button
-          onclick="showSection('supervisionVentas')"
-          id="btnSupervisionVentas"
-          class="coordinator-only hidden"
-        >
-          Supervisión de Ventas
+          Ventas
         </button>
 
         <button class="logout" onclick="logout()">Salir</button>
@@ -68,8 +55,8 @@
       <main class="content">
         <!-- DASHBOARD -->
         <div id="dashboard" class="card">
-          <h2>Bienvenido</h2>
-          <p id="welcome"></p>
+          <h2>Panel de Coordinadora</h2>
+          <div id="dashboardContent"></div>
         </div>
 
         <!-- INVENTARIO -->
@@ -81,64 +68,124 @@
         <div id="ventas" class="card hidden">
           <h3>Registrar venta</h3>
 
-          <input
-            id="businessName"
-            placeholder="Nombre del negocio"
-            class="form-input"
-            style="width: 100%; margin-bottom: 15px"
-          />
+          <div
+            style="
+              margin-bottom: 20px;
+              padding-bottom: 20px;
+              border-bottom: 2px solid #e2e8f0;
+            "
+          >
+            <h4 style="margin-bottom: 15px">Datos del Cliente</h4>
 
-          <div class="row">
-            <select
-              id="saleProduct"
-              class="form-select product-select"
-              style="flex: 2"
-            >
-              <option value="">Buscar producto...</option>
-              <option value="custom">[Producto personalizado]</option>
-            </select>
-            <input
-              id="saleProductCustom"
-              placeholder="Producto personalizado"
-              class="form-input hidden"
-              style="flex: 2"
-            />
-            <input
-              id="saleQty"
-              type="number"
-              min="1"
-              placeholder="Cantidad"
-              class="form-input"
-              style="flex: 1"
-            />
-            <input
-              id="salePrice"
-              type="number"
-              min="0"
-              step="0.01"
-              placeholder="Precio"
-              class="form-input"
-              style="flex: 1"
-            />
-            <button
-              onclick="addSaleItem()"
-              class="btn-primary"
-              style="flex: 0 0 auto"
-            >
-              Agregar
-            </button>
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Nombre del Negocio:</label>
+              <input
+                id="businessName"
+                placeholder="Ingresa el nombre del negocio"
+                class="form-input"
+                style="flex: 1"
+                required
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Razón Social o NIT:</label>
+              <input
+                id="razonSocial"
+                placeholder="Razón social o NIT del cliente"
+                class="form-input"
+                style="flex: 1"
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Responsable:</label>
+              <input
+                id="responsable"
+                placeholder="Nombre del responsable"
+                class="form-input"
+                style="flex: 1"
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Cédula (CC):</label>
+              <input
+                id="cc"
+                placeholder="Número de cédula"
+                class="form-input"
+                style="flex: 1"
+                type="text"
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Teléfono:</label>
+              <input
+                id="telefono"
+                placeholder="Número de teléfono"
+                class="form-input"
+                style="flex: 1"
+                type="tel"
+              />
+            </div>
           </div>
 
-          <div id="saleList"></div>
+          <div style="margin-bottom: 20px">
+            <h4 style="margin-bottom: 15px">Productos</h4>
 
-          <h3 style="margin-top: 20px">Total: $<span id="total">0</span></h3>
-          <button
-            onclick="finalizeSale()"
-            class="btn-primary"
-            style="margin-top: 10px"
-          >
-            Generar factura
-          </button>
+            <div class="row">
+              <select
+                id="saleProduct"
+                class="form-select product-select"
+                style="flex: 2"
+              >
+                <option value="">Buscar producto...</option>
+                <option value="custom">[Producto personalizado]</option>
+              </select>
+              <input
+                id="saleProductCustom"
+                placeholder="Producto personalizado"
+                class="form-input hidden"
+                style="flex: 2"
+              />
+              <input
+                id="saleQty"
+                type="number"
+                min="1"
+                placeholder="Cantidad"
+                class="form-input"
+                style="flex: 1"
+              />
+              <input
+                id="salePrice"
+                type="number"
+                min="0"
+                step="0.01"
+                placeholder="Precio"
+                class="form-input"
+                style="flex: 1"
+              />
+              <button
+                onclick="addSaleItem()"
+                class="btn-primary"
+                style="flex: 0 0 auto"
+              >
+                Agregar
+              </button>
+            </div>
+
+            <div id="saleList"></div>
+
+            <h3 style="margin-top: 20px">Total: $<span id="total">0</span></h3>
+            <button
+              onclick="finalizeSale()"
+              class="btn-primary"
+              style="margin-top: 10px"
+            >
+              Generar factura
+            </button>
+          </div>
         </div>
 
         <!-- FACTURAS -->

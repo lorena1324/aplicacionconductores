@@ -167,10 +167,14 @@ async function login() {
   document.getElementById("login").classList.add("hidden");
   document.getElementById("app").classList.remove("hidden");
 
-  document.getElementById("welcome").innerText =
-    currentRole === "coordinadora"
-      ? "Panel de Coordinadora - Gestión y Supervisión del Sistema"
-      : `Panel del ${currentUser}`;
+  // El elemento welcome ya no existe, se eliminó en la simplificación
+  // const welcomeEl = document.getElementById("welcome");
+  // if (welcomeEl) {
+  //   welcomeEl.innerText =
+  //     currentRole === "coordinadora"
+  //       ? "Panel de Coordinadora - Gestión y Supervisión del Sistema"
+  //       : `Panel del ${currentUser}`;
+  // }
 
   // Cargar productos si aún no están cargados
   if (productsCatalog.length === 0) {
@@ -197,17 +201,22 @@ async function login() {
 }
 
 function setupCoordinatorNavigation() {
-  // Mostrar botones de coordinadora
-  const coordinatorBtns = document.querySelectorAll(".coordinator-only");
-  coordinatorBtns.forEach((btn) => btn.classList.remove("hidden"));
-
-  // Ocultar botón de ventas (coordinadora no vende)
+  // Ocultar botones que no son para coordinadora
   const ventasBtn = document.getElementById("ventasBtn");
-  if (ventasBtn) ventasBtn.style.display = "none";
+  if (ventasBtn) ventasBtn.classList.add("hidden");
 
-  // Cambiar texto del botón de inventario
+  // Asegurar que los botones principales estén visibles
+  const btnDashboard = document.getElementById("btnDashboard");
+  if (btnDashboard) btnDashboard.classList.remove("hidden");
+
   const btnInventario = document.getElementById("btnInventario");
-  if (btnInventario) btnInventario.textContent = "Asignar Inventario";
+  if (btnInventario) {
+    btnInventario.classList.remove("hidden");
+    btnInventario.textContent = "Asignar Inventario";
+  }
+
+  const btnFacturas = document.getElementById("btnFacturas");
+  if (btnFacturas) btnFacturas.classList.remove("hidden");
 
   // Actualizar título del rol
   const roleTitle = document.getElementById("roleTitle");
@@ -215,13 +224,24 @@ function setupCoordinatorNavigation() {
 }
 
 function setupDriverNavigation() {
-  // Ocultar botones de coordinadora
-  const coordinatorBtns = document.querySelectorAll(".coordinator-only");
-  coordinatorBtns.forEach((btn) => btn.classList.add("hidden"));
-
   // Ocultar botón de Panel para conductores
   const btnDashboard = document.getElementById("btnDashboard");
   if (btnDashboard) btnDashboard.classList.add("hidden");
+
+  // Mostrar botón de ventas para conductores
+  const ventasBtn = document.getElementById("ventasBtn");
+  if (ventasBtn) ventasBtn.classList.remove("hidden");
+
+  // Mostrar botón de inventario para conductores (con texto diferente)
+  const btnInventario = document.getElementById("btnInventario");
+  if (btnInventario) {
+    btnInventario.classList.remove("hidden");
+    btnInventario.textContent = "Mi Inventario";
+  }
+
+  // Mostrar botón de facturas para conductores
+  const btnFacturas = document.getElementById("btnFacturas");
+  if (btnFacturas) btnFacturas.classList.remove("hidden");
 
   // Ocultar paneles solo de coordinadora
   const coordinatorPanels = [
@@ -255,6 +275,8 @@ function logout() {
    NAVEGACIÓN
 ========================= */
 function showSection(panelId) {
+  console.log(`=== showSection('${panelId}') llamado ===`);
+
   // Paneles comunes
   const commonPanels = ["dashboard", "inventario", "ventas", "facturas"];
   // Paneles solo para coordinadora
@@ -266,25 +288,253 @@ function showSection(panelId) {
 
   const allPanels = [...commonPanels, ...coordinatorPanels];
 
+  // Ocultar todos los paneles primero
   allPanels.forEach((id) => {
     const panel = document.getElementById(id);
-    if (panel) panel.classList.add("hidden");
+    if (panel) {
+      panel.classList.add("hidden");
+      console.log(`Panel '${id}' ocultado`);
+    }
   });
 
   const targetPanel = document.getElementById(panelId);
-  if (targetPanel) targetPanel.classList.remove("hidden");
+  if (!targetPanel) {
+    console.error(`ERROR: No se encontró el panel con ID: ${panelId}`);
+    return;
+  }
+
+  // Mostrar SOLO el panel objetivo
+  targetPanel.classList.remove("hidden");
+  console.log(`Panel '${panelId}' mostrado (removida clase 'hidden')`);
+
+  // Verificar que otros paneles estén ocultos
+  const ventasPanel = document.getElementById("ventas");
+  const facturasPanel = document.getElementById("facturas");
+  if (panelId === "facturas" && ventasPanel) {
+    if (!ventasPanel.classList.contains("hidden")) {
+      console.warn(
+        "⚠️ ADVERTENCIA: El panel 'ventas' no está oculto cuando debería estarlo"
+      );
+      ventasPanel.classList.add("hidden");
+    }
+  }
+  if (panelId === "ventas" && facturasPanel) {
+    if (!facturasPanel.classList.contains("hidden")) {
+      console.warn(
+        "⚠️ ADVERTENCIA: El panel 'facturas' no está oculto cuando debería estarlo"
+      );
+      facturasPanel.classList.add("hidden");
+    }
+  }
+
+  // Forzar reflow para asegurar que el panel sea visible
+  targetPanel.offsetHeight;
 
   // Renderizar contenido según el panel
-  if (panelId === "inventario") renderInventario();
-  if (panelId === "facturas") renderFacturas();
-  if (panelId === "ventas") renderVentas();
-  if (panelId === "gestionInventario") renderGestionInventario();
-  if (panelId === "controlMovimientos") renderControlMovimientos();
-  if (panelId === "supervisionVentas") renderSupervisionVentas();
+  try {
+    if (panelId === "dashboard") {
+      if (currentRole === "coordinadora") {
+        renderDashboard();
+      }
+    } else if (panelId === "inventario") {
+      renderInventario();
+    } else if (panelId === "facturas") {
+      console.log("Renderizando panel de FACTURAS");
+      // Verificar que el panel correcto esté visible
+      const facturasPanel = document.getElementById("facturas");
+      const ventasPanel = document.getElementById("ventas");
+      if (facturasPanel && !facturasPanel.classList.contains("hidden")) {
+        console.log("✅ Panel 'facturas' está visible");
+      } else {
+        console.error("❌ Panel 'facturas' NO está visible");
+        if (facturasPanel) facturasPanel.classList.remove("hidden");
+      }
+      if (ventasPanel && ventasPanel.classList.contains("hidden")) {
+        console.log("✅ Panel 'ventas' está oculto (correcto)");
+      } else {
+        console.warn("⚠️ Panel 'ventas' NO está oculto (forzando ocultación)");
+        if (ventasPanel) ventasPanel.classList.add("hidden");
+      }
+      // Pequeño delay para asegurar que el DOM esté actualizado
+      setTimeout(() => {
+        renderFacturas();
+      }, 50);
+    } else if (panelId === "ventas") {
+      renderVentas();
+    }
+  } catch (error) {
+    console.error(`Error al renderizar el panel ${panelId}:`, error);
+    console.error("Stack trace:", error.stack);
+    if (targetPanel) {
+      const contentDiv =
+        targetPanel.querySelector('[id$="Content"]') || targetPanel;
+      contentDiv.innerHTML = `<p style="color: #ef4444; padding: 20px;">Error al cargar el contenido: ${error.message}. Por favor recarga la página.</p>`;
+    }
+  }
 }
 
 function showPanel(panelId) {
   showSection(panelId);
+}
+
+/* =========================
+   DASHBOARD (COORDINADORA)
+========================= */
+function renderDashboard() {
+  const cont = document.getElementById("dashboardContent");
+  if (!cont) {
+    console.error("No se encontró el elemento dashboardContent");
+    return;
+  }
+
+  const date = today();
+  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+
+  // Calcular estadísticas
+  let totalProducts = 0;
+  let totalInventoryQty = 0;
+  let totalInvoices = 0;
+  let totalSales = 0;
+
+  drivers.forEach((driver) => {
+    const driverInv = inventory[date]?.[driver] || {};
+    totalProducts += Object.keys(driverInv).length;
+    totalInventoryQty += Object.values(driverInv).reduce(
+      (sum, qty) => sum + qty,
+      0
+    );
+
+    const driverInvoices = invoices[driver] || [];
+    totalInvoices += driverInvoices.length;
+    totalSales += driverInvoices.reduce(
+      (sum, inv) => sum + (inv.total || 0),
+      0
+    );
+  });
+
+  // Obtener facturas recientes (últimas 5)
+  const allInvoices = [];
+  drivers.forEach((driver) => {
+    const driverInvoices = invoices[driver] || [];
+    driverInvoices.forEach((inv) => {
+      allInvoices.push({
+        ...inv,
+        driver: driver,
+        driverName: driver.replace("conductor", "Conductor "),
+      });
+    });
+  });
+
+  allInvoices.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+  const recentInvoices = allInvoices.slice(0, 5);
+
+  cont.innerHTML = `
+    <div class="dashboard-summary">
+      <div class="summary-cards">
+        <div class="summary-card" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+          <h5>Total Productos Asignados</h5>
+          <p class="summary-value">${totalProducts}</p>
+          <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">${totalInventoryQty} unidades</p>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+          <h5>Total Facturado</h5>
+          <p class="summary-value">$${totalSales.toLocaleString()}</p>
+          <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">${totalInvoices} facturas</p>
+        </div>
+        <div class="summary-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+          <h5>Conductores Activos</h5>
+          <p class="summary-value">${
+            drivers.filter(
+              (d) => Object.keys(inventory[date]?.[d] || {}).length > 0
+            ).length
+          }</p>
+          <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">de ${
+            drivers.length
+          } totales</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-sections" style="margin-top: 30px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+      <!-- Resumen por Conductor -->
+      <div class="dashboard-section-card">
+        <h3>Inventario por Conductor</h3>
+        <div class="drivers-inventory-summary">
+          ${drivers
+            .map((driver) => {
+              const driverInv = inventory[date]?.[driver] || {};
+              const driverName = driver.replace("conductor", "Conductor ");
+              const totalItems = Object.keys(driverInv).length;
+              const totalQty = Object.values(driverInv).reduce(
+                (sum, qty) => sum + qty,
+                0
+              );
+
+              return `
+              <div class="driver-summary-item">
+                <div>
+                  <strong>${driverName}</strong>
+                  <p style="color: #64748b; font-size: 13px; margin: 5px 0 0 0;">
+                    ${totalItems} productos | ${totalQty} unidades
+                  </p>
+                </div>
+                <button onclick="showSection('inventario')" class="btn-primary" style="padding: 6px 12px; font-size: 12px;">
+                  Ver Detalles
+                </button>
+              </div>
+            `;
+            })
+            .join("")}
+        </div>
+      </div>
+
+      <!-- Facturas Recientes -->
+      <div class="dashboard-section-card">
+        <h3>Facturas Recientes</h3>
+        <div class="recent-invoices-list">
+          ${
+            recentInvoices.length === 0
+              ? '<p style="color: #64748b; text-align: center; padding: 20px;">No hay facturas registradas</p>'
+              : recentInvoices
+                  .map(
+                    (inv) => `
+              <div class="recent-invoice-item">
+                <div>
+                  <strong>${inv.negocio || "N/A"}</strong>
+                  <p style="color: #64748b; font-size: 12px; margin: 3px 0 0 0;">
+                    ${inv.driverName} - ${formatDate(inv.date)}
+                  </p>
+                </div>
+                <div style="text-align: right;">
+                  <strong style="color: #10b981; font-size: 16px;">$${inv.total.toLocaleString()}</strong>
+                  <button onclick="downloadInvoicePDFForCoordinator('${
+                    inv.driver
+                  }', ${invoices[inv.driver].indexOf(inv)})" 
+                          class="btn-download-pdf-small" 
+                          style="margin-top: 5px; padding: 4px 8px; font-size: 11px;">
+                    📄 PDF
+                  </button>
+                </div>
+              </div>
+            `
+                  )
+                  .join("")
+          }
+        </div>
+        ${
+          recentInvoices.length > 0
+            ? `
+          <div style="margin-top: 15px; text-align: center;">
+            <button onclick="showSection('facturas')" class="btn-primary" style="width: 100%;">
+              Ver Todas las Facturas
+            </button>
+          </div>
+        `
+            : ""
+        }
+      </div>
+    </div>
+  `;
 }
 
 /* =========================
@@ -438,13 +688,40 @@ function renderInventario() {
       </div>
 
       <div class="invoice-section" style="margin-top: 30px; padding-top: 25px; border-top: 2px solid #e2e8f0;">
-        <h4>Generar Factura</h4>
+        <h4>Datos del Cliente</h4>
         <div class="invoice-form">
           <div class="form-row" style="margin-bottom: 15px;">
-            <label style="min-width: 120px;">Nombre del Negocio:</label>
+            <label style="min-width: 150px;">Nombre del Negocio:</label>
             <input id="businessNameInvoice" placeholder="Ingresa el nombre del negocio" 
+                   class="form-input" style="flex: 1;" required>
+          </div>
+          
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Razón Social o NIT:</label>
+            <input id="razonSocialInvoice" placeholder="Razón social o NIT del cliente" 
                    class="form-input" style="flex: 1;">
           </div>
+          
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Responsable:</label>
+            <input id="responsableInvoice" placeholder="Nombre del responsable" 
+                   class="form-input" style="flex: 1;">
+          </div>
+          
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Cédula (CC):</label>
+            <input id="ccInvoice" placeholder="Número de cédula" 
+                   class="form-input" style="flex: 1;" type="text">
+          </div>
+          
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Teléfono:</label>
+            <input id="telefonoInvoice" placeholder="Número de teléfono" 
+                   class="form-input" style="flex: 1;" type="tel">
+          </div>
+          
+          <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
+            <h4 style="margin-bottom: 15px;">Productos de la Factura</h4>
           
           <div id="invoiceItemsList" class="invoice-items-preview">
             <p style="color: #64748b; text-align: center; padding: 20px;">
@@ -617,22 +894,18 @@ function assignInventory() {
 /* =========================
    GESTIÓN DE INVENTARIO (COORDINADORA)
 ========================= */
-function renderGestionInventario() {
-  const cont = document.getElementById("gestionInventarioContent");
-  if (!cont) return;
-
-  cont.innerHTML = "";
-
+function renderGestionInventarioContent() {
   const date = today();
   const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  let html = "";
 
   drivers.forEach((driver) => {
     const driverInv = inventory[date]?.[driver] || {};
     const driverName = driver.replace("conductor", "Conductor ");
 
-    cont.innerHTML += `
-      <div class="driver-inventory-card">
-        <h4>${driverName}</h4>
+    html += `
+      <div class="driver-inventory-card" style="margin-bottom: 25px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+        <h4 style="margin-bottom: 15px; color: #1e293b;">${driverName}</h4>
         <div class="inventory-table">
           <div class="table-header">
             <span>Producto</span>
@@ -662,6 +935,20 @@ function renderGestionInventario() {
       </div>
     `;
   });
+
+  return html;
+}
+
+function renderGestionInventario() {
+  const cont = document.getElementById("gestionInventarioContent");
+  if (!cont) {
+    console.error(
+      "No se encontró el elemento gestionInventarioContent. Verifica que el panel esté visible."
+    );
+    return;
+  }
+
+  cont.innerHTML = renderGestionInventarioContent();
 }
 
 function updateInventoryQty(driver, product, newQty) {
@@ -701,7 +988,15 @@ function updateInventoryQty(driver, product, newQty) {
   });
 
   saveData();
-  renderGestionInventario();
+  // Actualizar inventario si estamos en la vista de coordinadora
+  if (
+    currentRole === "coordinadora" &&
+    document.getElementById("inventoryList")
+  ) {
+    renderInventario();
+  } else {
+    renderGestionInventario();
+  }
 }
 
 function deleteInventoryItem(driver, product) {
@@ -730,7 +1025,16 @@ function deleteInventoryItem(driver, product) {
   });
 
   saveData();
-  renderGestionInventario();
+  // Actualizar inventario si estamos en la vista de coordinadora
+  if (
+    currentRole === "coordinadora" &&
+    document.getElementById("inventoryList")
+  ) {
+    renderInventario();
+  } else {
+    renderGestionInventario();
+  }
+  dispatchDataUpdate();
 }
 
 /* =========================
@@ -738,7 +1042,12 @@ function deleteInventoryItem(driver, product) {
 ========================= */
 function renderControlMovimientos() {
   const cont = document.getElementById("controlMovimientosContent");
-  if (!cont) return;
+  if (!cont) {
+    console.error(
+      "No se encontró el elemento controlMovimientosContent. Verifica que el panel esté visible."
+    );
+    return;
+  }
 
   // Guardar valores de filtros actuales antes de re-renderizar
   const currentDriver = document.getElementById("filterDriver")?.value || "";
@@ -807,6 +1116,11 @@ function renderControlMovimientos() {
   }
 
   const movementsList = document.getElementById("movementsList");
+  if (!movementsList) {
+    console.error("No se encontró el elemento movementsList");
+    return;
+  }
+
   if (filteredMovements.length === 0) {
     movementsList.innerHTML =
       '<div class="table-row"><span colspan="8" style="text-align: center; padding: 20px; color: #64748b;">No hay movimientos registrados</span></div>';
@@ -854,17 +1168,25 @@ function renderControlMovimientos() {
 ========================= */
 function renderSupervisionVentas() {
   const cont = document.getElementById("supervisionVentasContent");
-  if (!cont) return;
+  if (!cont) {
+    console.error("No se encontró el elemento supervisionVentasContent");
+    return;
+  }
 
-  cont.innerHTML = `
-    <div class="sales-summary">
-      ${renderSalesSummary()}
-    </div>
-    <div class="sales-details">
-      <h4>Detalle de Facturas por Conductor</h4>
-      ${renderSalesByDriver()}
-    </div>
-  `;
+  try {
+    cont.innerHTML = `
+      <div class="sales-summary">
+        ${renderSalesSummary()}
+      </div>
+      <div class="sales-details">
+        <h4>Detalle de Facturas por Conductor</h4>
+        ${renderSalesByDriver()}
+      </div>
+    `;
+  } catch (error) {
+    console.error("Error al renderizar supervisión de ventas:", error);
+    cont.innerHTML = `<p style="color: #ef4444; padding: 20px;">Error al cargar la información. Por favor recarga la página.</p>`;
+  }
 }
 
 function renderSalesSummary() {
@@ -908,7 +1230,7 @@ function renderSalesByDriver() {
   const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
 
   return drivers
-    .map((driver) => {
+    .map((driver, driverIndex) => {
       const driverInvoices = invoices[driver] || [];
       const driverName = driver.replace("conductor", "Conductor ");
       const driverTotal = driverInvoices.reduce(
@@ -918,6 +1240,9 @@ function renderSalesByDriver() {
       const todayInvoices = driverInvoices.filter(
         (inv) => inv.date === today()
       );
+
+      // Guardar referencia a las facturas de este conductor para descarga
+      const reversedInvoices = [...driverInvoices].reverse();
 
       return `
       <div class="driver-sales-card">
@@ -930,18 +1255,18 @@ function renderSalesByDriver() {
         <div class="invoices-table">
           ${
             driverInvoices.length === 0
-              ? '<div class="table-row"><span colspan="4" style="text-align: center; padding: 20px; color: #64748b;">Sin facturas registradas</span></div>'
-              : `<div class="table-header">
+              ? '<div class="table-row"><span colspan="5" style="text-align: center; padding: 20px; color: #64748b;">Sin facturas registradas</span></div>'
+              : `<div class="table-header" style="grid-template-columns: 1.5fr 1.5fr 2fr 1fr 1.2fr;">
                 <span>Fecha</span>
                 <span>Negocio</span>
                 <span>Productos</span>
                 <span>Total</span>
+                <span>Acción</span>
               </div>
-              ${driverInvoices
-                .reverse()
+              ${reversedInvoices
                 .map(
-                  (inv) => `
-                <div class="table-row">
+                  (inv, invIndex) => `
+                <div class="table-row" style="grid-template-columns: 1.5fr 1.5fr 2fr 1fr 1.2fr;">
                   <span>${formatDate(inv.date)}</span>
                   <span><strong>${inv.negocio || "N/A"}</strong></span>
                   <span>${
@@ -952,6 +1277,13 @@ function renderSalesByDriver() {
                       : "N/A"
                   }</span>
                   <span class="invoice-total">$${inv.total.toFixed(2)}</span>
+                  <span>
+                    <button onclick="downloadInvoicePDFForCoordinator('${driver}', ${invIndex})" 
+                            class="btn-download-pdf-small" 
+                            title="Descargar PDF">
+                      📄 PDF
+                    </button>
+                  </span>
                 </div>
               `
                 )
@@ -969,20 +1301,152 @@ function renderSalesByDriver() {
    FACTURAS
 ========================= */
 function renderFacturas() {
-  const cont = document.getElementById("invoiceList");
-  cont.innerHTML = "";
+  console.log("=== renderFacturas() INICIADO ===");
+  console.log("currentRole:", currentRole);
+  console.log("invoices:", invoices);
 
-  if (currentRole === "coordinadora") {
-    cont.innerHTML = `
-      <p>Para ver el detalle completo de ventas y facturas, ve a la sección "Supervisión de Ventas".</p>
-      <button onclick="showSection('supervisionVentas')" class="btn-primary">Ir a Supervisión de Ventas</button>
-    `;
+  // Asegurar que el panel esté visible
+  const facturasPanel = document.getElementById("facturas");
+  if (!facturasPanel) {
+    console.error("ERROR: No se encontró el panel de facturas");
     return;
   }
 
+  // Asegurar que el panel esté visible (siempre remover hidden)
+  facturasPanel.classList.remove("hidden");
+  console.log("Panel de facturas hecho visible");
+
+  const cont = document.getElementById("invoiceList");
+  if (!cont) {
+    console.error(
+      "ERROR: No se encontró el elemento invoiceList. Verificando estructura del DOM..."
+    );
+    // Intentar crear el contenedor si no existe
+    const h3 = facturasPanel.querySelector("h3");
+    if (h3) {
+      const newCont = document.createElement("div");
+      newCont.id = "invoiceList";
+      facturasPanel.appendChild(newCont);
+      console.log("Contenedor invoiceList creado dinámicamente");
+      // Reintentar después de crear el contenedor
+      setTimeout(() => renderFacturas(), 10);
+      return;
+    }
+    facturasPanel.innerHTML =
+      '<h3>Facturas</h3><p style="color: #ef4444; padding: 20px;">Error: No se encontró el contenedor de facturas.</p>';
+    return;
+  }
+
+  // Limpiar contenido
+  cont.innerHTML = "";
+
+  if (currentRole === "coordinadora") {
+    console.log("Renderizando facturas para COORDINADORA");
+    // Mostrar todas las facturas de todos los conductores
+    const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+    const allInvoices = [];
+
+    drivers.forEach((driver) => {
+      const driverInvoices = invoices[driver] || [];
+      console.log(`${driver}: ${driverInvoices.length} facturas`);
+      driverInvoices.forEach((inv, index) => {
+        allInvoices.push({
+          ...inv,
+          driver: driver,
+          driverName: driver.replace("conductor", "Conductor "),
+          originalIndex: index, // Guardar índice original para descarga
+        });
+      });
+    });
+
+    console.log(`Total de facturas encontradas: ${allInvoices.length}`);
+
+    allInvoices.sort(
+      (a, b) =>
+        new Date(b.timestamp || b.date) - new Date(a.timestamp || a.date)
+    );
+
+    if (allInvoices.length === 0) {
+      cont.innerHTML = `
+        <div style="text-align: center; padding: 40px;">
+          <p style="color: #64748b; font-size: 16px;">No hay facturas registradas</p>
+        </div>
+      `;
+      return;
+    }
+
+    // Calcular totales
+    const totalSales = allInvoices.reduce(
+      (sum, inv) => sum + (inv.total || 0),
+      0
+    );
+
+    const htmlContent = `
+      <div class="invoices-list-header" style="margin-bottom: 20px;">
+        <div>
+          <h3>Facturas de Todos los Conductores</h3>
+          <p style="color: #64748b; font-size: 14px; margin-top: 5px;">
+            Total: ${
+              allInvoices.length
+            } factura(s) | Total facturado: $${totalSales.toLocaleString()}
+          </p>
+        </div>
+      </div>
+      <div class="invoices-table-list">
+        <div class="table-header" style="grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;">
+          <span>Fecha</span>
+          <span>Conductor</span>
+          <span>Negocio</span>
+          <span>Total</span>
+          <span>Acción</span>
+        </div>
+        ${allInvoices
+          .map((f) => {
+            // Usar el índice original guardado
+            const originalIndex =
+              f.originalIndex !== undefined ? f.originalIndex : 0;
+            return `
+            <div class="table-row" style="grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;">
+              <span>${formatDate(f.date)}</span>
+              <span><strong>${f.driverName}</strong></span>
+              <span>${f.negocio || "N/A"}</span>
+              <span style="font-weight: 600; color: #10b981;">$${(
+                f.total || 0
+              ).toLocaleString()}</span>
+              <span>
+                <button onclick="downloadInvoicePDFForCoordinator('${
+                  f.driver
+                }', ${originalIndex})" 
+                        class="btn-download-pdf" 
+                        title="Descargar PDF">
+                  📄 Descargar PDF
+                </button>
+              </span>
+            </div>
+          `;
+          })
+          .join("")}
+      </div>
+    `;
+
+    cont.innerHTML = htmlContent;
+    console.log("✅ HTML de facturas insertado correctamente");
+    console.log("Total de facturas renderizadas:", allInvoices.length);
+    return;
+  }
+
+  // Renderizar facturas para conductores
+  console.log("Renderizando facturas para CONDUCTOR:", currentUser);
   const list = invoices[currentUser] || [];
+  console.log(`Facturas encontradas para ${currentUser}:`, list.length);
+
   if (list.length === 0) {
-    cont.innerHTML = "<p>No hay facturas.</p>";
+    cont.innerHTML = `
+      <div style="text-align: center; padding: 40px;">
+        <p style="color: #64748b; font-size: 16px; margin-bottom: 10px;">No hay facturas registradas</p>
+        <p style="color: #94a3b8; font-size: 14px;">Las facturas que generes aparecerán aquí</p>
+      </div>
+    `;
     return;
   }
 
@@ -1198,6 +1662,13 @@ function finalizeInvoiceFromInventory() {
   const businessName = document
     .getElementById("businessNameInvoice")
     ?.value.trim();
+  const razonSocial =
+    document.getElementById("razonSocialInvoice")?.value.trim() || "";
+  const responsable =
+    document.getElementById("responsableInvoice")?.value.trim() || "";
+  const cc = document.getElementById("ccInvoice")?.value.trim() || "";
+  const telefono =
+    document.getElementById("telefonoInvoice")?.value.trim() || "";
 
   if (!businessName) {
     alert("Por favor ingresa el nombre del negocio");
@@ -1278,6 +1749,10 @@ function finalizeInvoiceFromInventory() {
   // Limpiar formulario
   invoiceItems = [];
   document.getElementById("businessNameInvoice").value = "";
+  document.getElementById("razonSocialInvoice").value = "";
+  document.getElementById("responsableInvoice").value = "";
+  document.getElementById("ccInvoice").value = "";
+  document.getElementById("telefonoInvoice").value = "";
 
   alert(`✓ Factura generada correctamente. Total: $${total.toLocaleString()}`);
 
@@ -1393,6 +1868,12 @@ function updateSaleTotal() {
 
 function finalizeSale() {
   const businessName = document.getElementById("businessName").value.trim();
+  const razonSocial =
+    document.getElementById("razonSocial")?.value.trim() || "";
+  const responsable =
+    document.getElementById("responsable")?.value.trim() || "";
+  const cc = document.getElementById("cc")?.value.trim() || "";
+  const telefono = document.getElementById("telefono")?.value.trim() || "";
   const items = document.querySelectorAll(".sale-item");
 
   if (!businessName) {
@@ -1452,6 +1933,10 @@ function finalizeSale() {
   const invoice = {
     date: date,
     negocio: businessName,
+    razonSocial: razonSocial,
+    responsable: responsable,
+    cc: cc,
+    telefono: telefono,
     items: saleItems,
     total: total,
     timestamp: new Date().toISOString(),
@@ -1468,6 +1953,10 @@ function finalizeSale() {
 
   // Limpiar formulario
   document.getElementById("businessName").value = "";
+  document.getElementById("razonSocial").value = "";
+  document.getElementById("responsable").value = "";
+  document.getElementById("cc").value = "";
+  document.getElementById("telefono").value = "";
   document.getElementById("saleList").innerHTML = "";
   document.getElementById("total").textContent = "0";
 
@@ -1519,7 +2008,15 @@ function generateInvoicePDF(invoice) {
   doc.setTextColor(...textColor);
   doc.setFontSize(10);
 
-  const driverName = currentUser.replace("conductor", "Conductor ");
+  // Obtener el nombre del conductor (puede ser desde currentUser o desde la factura si es coordinadora)
+  let driverName = "";
+  if (currentUser && currentUser !== "coordinadora") {
+    driverName = currentUser.replace("conductor", "Conductor ");
+  } else {
+    // Si es coordinadora, intentar obtener el conductor desde el contexto
+    // Por ahora, usar un valor genérico o buscar en los movimientos
+    driverName = "Conductor";
+  }
   const invoiceDate = formatDate(invoice.date);
   const invoiceNumber = invoices[currentUser]
     ? invoices[currentUser].length
@@ -1537,17 +2034,54 @@ function generateInvoicePDF(invoice) {
   doc.setFont("helvetica", "normal");
   doc.text(invoice.negocio || "N/A", 150, yPos + 5);
 
+  // Información adicional del cliente
+  let clientInfoYPos = yPos + 12;
+  if (invoice.razonSocial) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Razón Social/NIT:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.razonSocial, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.responsable) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Responsable:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.responsable, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.cc) {
+    doc.setFont("helvetica", "bold");
+    doc.text("CC:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.cc, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.telefono) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Teléfono:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.telefono, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  // Fecha y número de factura
+  const dateYPos = Math.max(clientInfoYPos, yPos + 35);
   doc.setFont("helvetica", "bold");
-  doc.text("FECHA:", 150, yPos + 12);
+  doc.text("FECHA:", 150, dateYPos);
   doc.setFont("helvetica", "normal");
-  doc.text(invoiceDate, 150, yPos + 17);
+  doc.text(invoiceDate, 150, dateYPos + 5);
 
   doc.setFont("helvetica", "bold");
-  doc.text("FACTURA #:", 150, yPos + 24);
+  doc.text("FACTURA #:", 150, dateYPos + 12);
   doc.setFont("helvetica", "normal");
-  doc.text(String(invoiceNumber).padStart(6, "0"), 150, yPos + 29);
+  doc.text(String(invoiceNumber).padStart(6, "0"), 150, dateYPos + 17);
 
-  yPos += 45;
+  // Ajustar yPos para la tabla de productos
+  yPos = Math.max(50 + 45, dateYPos + 25);
 
   // Línea separadora
   doc.setDrawColor(...grayColor);
@@ -1636,6 +2170,211 @@ function generateInvoicePDF(invoice) {
   doc.save(fileName);
 }
 
+function generateInvoicePDFForDriver(invoice, driver) {
+  // Verificar que jsPDF esté disponible
+  if (typeof window.jspdf === "undefined") {
+    console.error("jsPDF no está disponible");
+    alert(
+      "Error: No se pudo generar el PDF. La biblioteca jsPDF no está cargada."
+    );
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Configuración de colores
+  const primaryColor = [37, 99, 235]; // #2563eb
+  const secondaryColor = [16, 185, 129]; // #10b981
+  const textColor = [30, 41, 59]; // #1e293b
+  const grayColor = [100, 116, 139]; // #64748b
+
+  let yPos = 20;
+
+  // Encabezado
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, 210, 40, "F");
+
+  // Logo o título
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(24);
+  doc.setFont("helvetica", "bold");
+  doc.text("FACTURA", 105, 20, { align: "center" });
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "normal");
+  doc.text("Conductores Pro", 105, 30, { align: "center" });
+
+  yPos = 50;
+
+  // Información de la factura
+  doc.setTextColor(...textColor);
+  doc.setFontSize(10);
+
+  const driverName = driver.replace("conductor", "Conductor ");
+  const invoiceDate = formatDate(invoice.date);
+
+  // Obtener el número de factura del conductor
+  const driverInvoices = invoices[driver] || [];
+  const invoiceNumber =
+    driverInvoices.findIndex(
+      (inv) =>
+        inv.date === invoice.date &&
+        inv.negocio === invoice.negocio &&
+        inv.total === invoice.total
+    ) + 1;
+
+  // Columna izquierda - Vendedor
+  doc.setFont("helvetica", "bold");
+  doc.text("VENDEDOR:", 20, yPos);
+  doc.setFont("helvetica", "normal");
+  doc.text(driverName, 20, yPos + 5);
+
+  // Columna derecha - Cliente y Fecha
+  doc.setFont("helvetica", "bold");
+  doc.text("CLIENTE:", 150, yPos);
+  doc.setFont("helvetica", "normal");
+  doc.text(invoice.negocio || "N/A", 150, yPos + 5);
+
+  // Información adicional del cliente
+  let clientInfoYPos = yPos + 12;
+  if (invoice.razonSocial) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Razón Social/NIT:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.razonSocial, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.responsable) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Responsable:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.responsable, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.cc) {
+    doc.setFont("helvetica", "bold");
+    doc.text("CC:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.cc, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.telefono) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Teléfono:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(invoice.telefono, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  // Fecha y número de factura
+  const dateYPos = Math.max(clientInfoYPos, yPos + 35);
+  doc.setFont("helvetica", "bold");
+  doc.text("FECHA:", 150, dateYPos);
+  doc.setFont("helvetica", "normal");
+  doc.text(invoiceDate, 150, dateYPos + 5);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("FACTURA #:", 150, dateYPos + 12);
+  doc.setFont("helvetica", "normal");
+  doc.text(String(invoiceNumber).padStart(6, "0"), 150, dateYPos + 17);
+
+  // Ajustar yPos para la tabla de productos
+  yPos = Math.max(50 + 45, dateYPos + 25);
+
+  // Línea separadora
+  doc.setDrawColor(...grayColor);
+  doc.line(20, yPos, 190, yPos);
+  yPos += 10;
+
+  // Encabezado de la tabla
+  doc.setFillColor(241, 245, 249);
+  doc.rect(20, yPos, 170, 10, "F");
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(...textColor);
+
+  doc.text("PRODUCTO", 25, yPos + 7);
+  doc.text("CANT.", 100, yPos + 7);
+  doc.text("PRECIO UNIT.", 125, yPos + 7);
+  doc.text("SUBTOTAL", 165, yPos + 7, { align: "right" });
+
+  yPos += 12;
+
+  // Items de la factura
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(9);
+  doc.setTextColor(...textColor);
+
+  invoice.items.forEach((item, index) => {
+    // Alternar color de fila
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(20, yPos - 3, 170, 8, "F");
+    }
+
+    // Ajustar texto largo del producto
+    let productText = item.product;
+    if (productText.length > 35) {
+      productText = productText.substring(0, 32) + "...";
+    }
+
+    doc.text(productText, 25, yPos + 2);
+    doc.text(String(item.qty), 100, yPos + 2);
+    doc.text(`$${item.price.toLocaleString()}`, 125, yPos + 2);
+    doc.text(`$${item.subtotal.toLocaleString()}`, 165, yPos + 2, {
+      align: "right",
+    });
+
+    yPos += 8;
+  });
+
+  yPos += 5;
+
+  // Línea separadora antes del total
+  doc.setDrawColor(...grayColor);
+  doc.line(20, yPos, 190, yPos);
+  yPos += 10;
+
+  // Total
+  doc.setFillColor(...secondaryColor);
+  doc.rect(100, yPos, 90, 12, "F");
+
+  doc.setFontSize(12);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("TOTAL:", 110, yPos + 8);
+  doc.text(`$${invoice.total.toLocaleString()}`, 185, yPos + 8, {
+    align: "right",
+  });
+
+  yPos += 20;
+
+  // Notas o pie de página
+  doc.setTextColor(...grayColor);
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text("Gracias por su compra", 105, yPos, { align: "center" });
+  yPos += 5;
+  doc.text("Factura generada electrónicamente", 105, yPos, { align: "center" });
+
+  // Generar nombre del archivo
+  const fileName = `Factura_${driverName.replace(
+    /\s/g,
+    "_"
+  )}_${invoice.negocio.replace(/[^a-z0-9]/gi, "_")}_${invoice.date.replace(
+    /-/g,
+    ""
+  )}.pdf`;
+
+  // Descargar el PDF
+  doc.save(fileName);
+}
+
 function downloadInvoicePDFFromList(index) {
   // La lista ya está en orden inverso (más recientes primero)
   const list = window.invoiceListForDownload;
@@ -1654,6 +2393,36 @@ function downloadInvoicePDFFromList(index) {
 
   // Generar PDF de la factura
   generateInvoicePDF(invoice);
+}
+
+function downloadInvoicePDFForCoordinator(driver, index) {
+  // Obtener las facturas del conductor
+  const driverInvoices = invoices[driver] || [];
+
+  if (!driverInvoices || driverInvoices.length === 0) {
+    alert("Error: No se encontraron facturas para este conductor");
+    return;
+  }
+
+  // Las facturas están en orden cronológico, pero las mostramos en reverso
+  // Por lo tanto, necesitamos calcular el índice correcto
+  const reversedIndex = driverInvoices.length - 1 - index;
+  const invoice = driverInvoices[reversedIndex];
+
+  if (!invoice) {
+    alert("Error: Factura no encontrada");
+    return;
+  }
+
+  // Guardar temporalmente el conductor para la generación del PDF
+  const originalUser = currentUser;
+  currentUser = driver;
+
+  // Generar PDF de la factura
+  generateInvoicePDF(invoice);
+
+  // Restaurar el usuario original
+  currentUser = originalUser;
 }
 
 /* =========================

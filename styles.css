@@ -1024,6 +1024,25 @@ body {
   background: #1d4ed8;
 }
 
+.btn-download-pdf-small {
+  padding: 6px 12px;
+  background: #2563eb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-download-pdf-small:hover {
+  background: #1d4ed8;
+}
+
 .invoices-table-list {
   margin-top: 15px;
 }
@@ -1113,4 +1132,92 @@ body {
   .invoice-item-row span {
     text-align: left;
   }
+}
+
+/* =========================
+   DASHBOARD ESTILOS
+========================= */
+.dashboard-section-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.dashboard-section-card h3 {
+  margin: 0 0 15px 0;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.drivers-inventory-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.driver-summary-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.driver-summary-item strong {
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.recent-invoices-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-height: 400px;
+  overflow-y: auto;
+}
+
+.recent-invoice-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e2e8f0;
+}
+
+.recent-invoice-item strong {
+  color: #1e293b;
+  font-size: 14px;
+}
+
+.quick-assign-section-card {
+  background: white;
+  padding: 20px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.quick-assign-section-card h3 {
+  margin: 0 0 10px 0;
+  color: #1e293b;
+  font-size: 18px;
+}
+
+.btn-download-pdf-small {
+  background: #10b981;
+  color: white;
+  border: none;
+  padding: 6px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 12px;
+  transition: background 0.2s;
+}
+
+.btn-download-pdf-small:hover {
+  background: #059669;
 }
