@@ -1,107 +1,181 @@
 <!DOCTYPE html>
 <html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Conductores Pro</title>
-  <link rel="stylesheet" href="styles.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-</head>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Conductores Pro</title>
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  </head>
 
-<body>
+  <body>
+    <!-- LOGIN -->
+    <div id="login" class="login-card">
+      <img src="logo.png" class="logo" />
+      <h2>Conductores Pro</h2>
 
-<!-- LOGIN -->
-<div id="login" class="login-card">
-  <img src="logo.png" class="logo">
-  <h2>Conductores Pro</h2>
+      <select id="userSelect">
+        <option value="">Seleccionar usuario</option>
+        <option value="coordinadora">Coordinadora</option>
+        <option value="conductor1">Conductor 1</option>
+        <option value="conductor2">Conductor 2</option>
+        <option value="conductor3">Conductor 3</option>
+        <option value="conductor4">Conductor 4</option>
+      </select>
 
-  <select id="userSelect">
-    <option value="">Seleccionar usuario</option>
-    <option value="coordinadora">Coordinadora</option>
-    <option value="conductor1">Conductor 1</option>
-    <option value="conductor2">Conductor 2</option>
-    <option value="conductor3">Conductor 3</option>
-    <option value="conductor4">Conductor 4</option>
-  </select>
-
-  <input type="password" id="password" placeholder="Contraseña">
-  <button onclick="login()">Ingresar</button>
-</div>
-
-<!-- APP -->
-<div id="app" class="app hidden">
-
-  <aside class="sidebar">
-    <img src="logo.png" class="logo">
-    <h3 id="roleTitle"></h3>
-
-    <button onclick="showSection('dashboard')">Panel</button>
-    <button onclick="showSection('inventario')">Inventario</button>
-    <button id="ventasBtn" onclick="showSection('ventas')">Ventas</button>
-    <button onclick="showSection('facturas')">Facturas</button>
-
-    <button class="logout" onclick="logout()">Salir</button>
-  </aside>
-
-  <main class="content">
-
-    <!-- DASHBOARD -->
-    <div id="dashboard" class="card">
-      <h2>Bienvenido</h2>
-      <p id="welcome"></p>
+      <input type="password" id="password" placeholder="Contraseña" />
+      <button onclick="login()">Ingresar</button>
     </div>
 
-    <!-- INVENTARIO -->
-    <div id="inventario" class="card hidden">
+    <!-- APP -->
+    <div id="app" class="app hidden">
+      <aside class="sidebar">
+        <img src="logo.png" class="logo" />
+        <h3 id="roleTitle"></h3>
 
-      <!-- COORDINADORA -->
-      <div id="assignInventory" class="hidden">
-        <h3>Asignar inventario diario</h3>
+        <button onclick="showSection('dashboard')" id="btnDashboard">
+          Panel
+        </button>
+        <button onclick="showSection('inventario')" id="btnInventario">
+          Asignar Inventario
+        </button>
+        <button
+          onclick="showSection('gestionInventario')"
+          id="btnGestionInventario"
+          class="coordinator-only hidden"
+        >
+          Gestionar Inventario
+        </button>
+        <button
+          onclick="showSection('controlMovimientos')"
+          id="btnControlMovimientos"
+          class="coordinator-only hidden"
+        >
+          Control de Movimientos
+        </button>
+        <button id="ventasBtn" onclick="showSection('ventas')">Ventas</button>
+        <button onclick="showSection('facturas')">Facturas</button>
+        <button
+          onclick="showSection('supervisionVentas')"
+          id="btnSupervisionVentas"
+          class="coordinator-only hidden"
+        >
+          Supervisión de Ventas
+        </button>
 
-        <select id="invDriver">
-          <option value="conductor1">Conductor 1</option>
-          <option value="conductor2">Conductor 2</option>
-          <option value="conductor3">Conductor 3</option>
-          <option value="conductor4">Conductor 4</option>
-        </select>
+        <button class="logout" onclick="logout()">Salir</button>
+      </aside>
 
-        <input id="invProduct" placeholder="Producto">
-        <input id="invQty" type="number" placeholder="Cantidad">
+      <main class="content">
+        <!-- DASHBOARD -->
+        <div id="dashboard" class="card">
+          <h2>Bienvenido</h2>
+          <p id="welcome"></p>
+        </div>
 
-        <button onclick="assignInventory()">Asignar</button>
-      </div>
+        <!-- INVENTARIO -->
+        <div id="inventario" class="card hidden">
+          <div id="inventoryList"></div>
+        </div>
 
-      <h3>Inventario del día</h3>
-      <div id="inventoryList"></div>
+        <!-- VENTAS -->
+        <div id="ventas" class="card hidden">
+          <h3>Registrar venta</h3>
+
+          <input
+            id="businessName"
+            placeholder="Nombre del negocio"
+            class="form-input"
+            style="width: 100%; margin-bottom: 15px"
+          />
+
+          <div class="row">
+            <select
+              id="saleProduct"
+              class="form-select product-select"
+              style="flex: 2"
+            >
+              <option value="">Buscar producto...</option>
+              <option value="custom">[Producto personalizado]</option>
+            </select>
+            <input
+              id="saleProductCustom"
+              placeholder="Producto personalizado"
+              class="form-input hidden"
+              style="flex: 2"
+            />
+            <input
+              id="saleQty"
+              type="number"
+              min="1"
+              placeholder="Cantidad"
+              class="form-input"
+              style="flex: 1"
+            />
+            <input
+              id="salePrice"
+              type="number"
+              min="0"
+              step="0.01"
+              placeholder="Precio"
+              class="form-input"
+              style="flex: 1"
+            />
+            <button
+              onclick="addSaleItem()"
+              class="btn-primary"
+              style="flex: 0 0 auto"
+            >
+              Agregar
+            </button>
+          </div>
+
+          <div id="saleList"></div>
+
+          <h3 style="margin-top: 20px">Total: $<span id="total">0</span></h3>
+          <button
+            onclick="finalizeSale()"
+            class="btn-primary"
+            style="margin-top: 10px"
+          >
+            Generar factura
+          </button>
+        </div>
+
+        <!-- FACTURAS -->
+        <div id="facturas" class="card hidden">
+          <h3>Facturas</h3>
+          <div id="invoiceList"></div>
+        </div>
+
+        <!-- GESTIÓN DE INVENTARIO (COORDINADORA) -->
+        <div id="gestionInventario" class="card hidden">
+          <h2>Gestión de Inventario por Conductor</h2>
+          <p>Visualiza y edita el inventario asignado a cada conductor.</p>
+          <div id="gestionInventarioContent"></div>
+        </div>
+
+        <!-- CONTROL DE MOVIMIENTOS (COORDINADORA) -->
+        <div id="controlMovimientos" class="card hidden">
+          <h2>Control General de Movimientos</h2>
+          <p>
+            Historial completo de todos los movimientos de productos en el
+            sistema.
+          </p>
+          <div id="controlMovimientosContent"></div>
+        </div>
+
+        <!-- SUPERVISIÓN DE VENTAS (COORDINADORA) -->
+        <div id="supervisionVentas" class="card hidden">
+          <h2>Supervisión de Ventas y Facturas</h2>
+          <p>
+            Visualiza y supervisa todas las ventas y facturas de todos los
+            conductores.
+          </p>
+          <div id="supervisionVentasContent"></div>
+        </div>
+      </main>
     </div>
 
-    <!-- VENTAS -->
-    <div id="ventas" class="card hidden">
-      <h3>Registrar venta</h3>
-
-      <input id="businessName" placeholder="Nombre del negocio">
-
-      <div class="row">
-        <input id="saleProduct" placeholder="Producto">
-        <input id="saleQty" type="number" placeholder="Cantidad">
-        <input id="salePrice" type="number" placeholder="Precio">
-        <button onclick="addSaleItem()">Agregar</button>
-      </div>
-
-      <div id="saleList"></div>
-
-      <h3>Total: $<span id="total">0</span></h3>
-      <button onclick="finalizeSale()">Generar factura</button>
-    </div>
-
-    <!-- FACTURAS -->
-    <div id="facturas" class="card hidden">
-      <h3>Facturas</h3>
-      <div id="invoiceList"></div>
-    </div>
-
-  </main>
-</div>
-
-<script src="app.js"></script>
-</body>
+    <script src="app.js"></script>
+  </body>
 </html>

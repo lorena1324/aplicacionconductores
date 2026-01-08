@@ -1,0 +1,887 @@
+{
+  "TAT": [
+    {
+      "articulo": 30000196,
+      "descripcion": "ARROZ BLANCO X  UND 460G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 1600
+    },
+    {
+      "articulo": 30000110,
+      "descripcion": "ARROZ BLANCO X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "precio": 40000
+    },
+    {
+      "articulo": 30000205,
+      "descripcion": "ARROZ BLANCO X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 1700
+    },
+    {
+      "articulo": 30000179,
+      "descripcion": "ARROZ BLANCO X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 42500
+    },
+    {
+      "articulo": 30000168,
+      "descripcion": "ARROZ BLANCO X 10 KILOS",
+      "UOM": "LONA",
+      "canal": "TAT",
+      "Precios": 37000
+    },
+    {
+      "articulo": 30000198,
+      "descripcion": "ARVEJA VERDE  X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 2400
+    },
+    {
+      "articulo": 30000169,
+      "descripcion": "ARVEJA VERDE X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 60000
+    },
+    {
+      "articulo": 30000171,
+      "descripcion": "FRIJOL BOLA ROJA  X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 150000
+    },
+    {
+      "articulo": 30000199,
+      "descripcion": "FRIJOL BOLA ROJA X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 6000
+    },
+    {
+      "articulo": 30000192,
+      "descripcion": "FRIJOL CARGAMANTO X  UND 460G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 4100
+    },
+    {
+      "articulo": 30000104,
+      "descripcion": "FRIJOL CARGAMANTO X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 102500
+    },
+    {
+      "articulo": 30000202,
+      "descripcion": "FRIJOL RADICAL X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 4600
+    },
+    {
+      "articulo": 30000174,
+      "descripcion": "FRIJOL RADICAL X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 115000
+    },
+    {
+      "articulo": 30000204,
+      "descripcion": "GARBANZO X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 3150
+    },
+    {
+      "articulo": 30000176,
+      "descripcion": "GARBANZO X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 78750
+    },
+    {
+      "articulo": 30000203,
+      "descripcion": "LENTEJA X UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 3094
+    },
+    {
+      "articulo": 30000175,
+      "descripcion": "LENTEJAS X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 77350
+    },
+    {
+      "articulo": 30000197,
+      "descripcion": "MAIZ PIRA X  UND 460G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 1900
+    },
+    {
+      "articulo": 30000116,
+      "descripcion": "MAIZ PIRA X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 47500
+    },
+    {
+      "articulo": 30000206,
+      "descripcion": "MAIZ PIRA X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 2100
+    },
+    {
+      "articulo": 30000185,
+      "descripcion": "MAIZ PIRA X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 52500
+    },
+    {
+      "articulo": "TOTAL"
+    }
+  ],
+  "PRECIOS DUFLO": [
+    {
+      "articulo": 30000196,
+      "descripcion": "ARROZ BLANCO X  UND 460G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 1600
+    },
+    {
+      "articulo": 30000110,
+      "descripcion": "ARROZ BLANCO X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 40000
+    },
+    {
+      "articulo": 30000205,
+      "descripcion": "ARROZ BLANCO X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 1700
+    },
+    {
+      "articulo": 30000179,
+      "descripcion": "ARROZ BLANCO X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 42500
+    },
+    {
+      "articulo": 30000168,
+      "descripcion": "ARROZ BLANCO X 10 KILOS",
+      "UOM": "LONA",
+      "canal": "TAT",
+      "Precios": 37000
+    },
+    {
+      "articulo": 30000198,
+      "descripcion": "ARVEJA VERDE  X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 2102
+    },
+    {
+      "articulo": 30000169,
+      "descripcion": "ARVEJA VERDE X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 52550
+    },
+    {
+      "articulo": 30000171,
+      "descripcion": "FRIJOL BOLA ROJA  X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 118850
+    },
+    {
+      "articulo": 30000199,
+      "descripcion": "FRIJOL BOLA ROJA X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 4754
+    },
+    {
+      "articulo": 30000192,
+      "descripcion": "FRIJOL CARGAMANTO X  UND 460G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 4458
+    },
+    {
+      "articulo": 30000104,
+      "descripcion": "FRIJOL CARGAMANTO X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 111450
+    },
+    {
+      "articulo": 30000202,
+      "descripcion": "FRIJOL RADICAL X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 4102
+    },
+    {
+      "articulo": 30000174,
+      "descripcion": "FRIJOL RADICAL X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 102550
+    },
+    {
+      "articulo": 30000204,
+      "descripcion": "GARBANZO X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 3150
+    },
+    {
+      "articulo": 30000176,
+      "descripcion": "GARBANZO X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 78750
+    },
+    {
+      "articulo": 30000203,
+      "descripcion": "LENTEJA X UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 3400
+    },
+    {
+      "articulo": 30000175,
+      "descripcion": "LENTEJAS X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 85000
+    },
+    {
+      "articulo": 30000197,
+      "descripcion": "MAIZ PIRA X  UND 460G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 1900
+    },
+    {
+      "articulo": 30000116,
+      "descripcion": "MAIZ PIRA X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 47500
+    },
+    {
+      "articulo": 30000206,
+      "descripcion": "MAIZ PIRA X  UND 500G",
+      "UOM": "UND",
+      "canal": "TAT",
+      "Precios": 2100
+    },
+    {
+      "articulo": 30000185,
+      "descripcion": "MAIZ PIRA X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "TAT",
+      "Precios": 52500
+    },
+    {
+      "descripcion": "MALLA PLATANOS MEDIANOS",
+      "UOM": "MALLA",
+      "canal": "TAT",
+      "Precios": 480
+    },
+    {
+      "articulo": "TOTAL"
+    }
+  ],
+  "DISTRIBUIDORES & MAYORISTAS": [
+    {
+      "articulo": 30000196,
+      "descripcion": "ARROZ BLANCO X  UND 460G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 1600
+    },
+    {
+      "articulo": 30000110,
+      "descripcion": "ARROZ BLANCO X 25 UND 460GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 40000
+    },
+    {
+      "articulo": 30000205,
+      "descripcion": "ARROZ BLANCO X  UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 1700
+    },
+    {
+      "articulo": 30000179,
+      "descripcion": "ARROZ BLANCO X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 42500
+    },
+    {
+      "articulo": 30000168,
+      "descripcion": "ARROZ BLANCO X 10 KILOS",
+      "Uom": "LONA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 37000
+    },
+    {
+      "articulo": 30000198,
+      "descripcion": "ARVEJA VERDE  X  UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 2102
+    },
+    {
+      "articulo": 30000169,
+      "descripcion": "ARVEJA VERDE X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 52550
+    },
+    {
+      "articulo": 30000171,
+      "descripcion": "FRIJOL BOLA ROJA  X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 125000
+    },
+    {
+      "articulo": 30000199,
+      "descripcion": "FRIJOL BOLA ROJA X  UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 5000
+    },
+    {
+      "articulo": 30000192,
+      "descripcion": "FRIJOL CARGAMANTO X  UND 460G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 4458
+    },
+    {
+      "articulo": 30000104,
+      "descripcion": "FRIJOL CARGAMANTO X 25 UND 460GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 111450
+    },
+    {
+      "articulo": 30000202,
+      "descripcion": "FRIJOL RADICAL X  UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 4102
+    },
+    {
+      "articulo": 30000174,
+      "descripcion": "FRIJOL RADICAL X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 102550
+    },
+    {
+      "articulo": 30000204,
+      "descripcion": "GARBANZO X  UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 3150
+    },
+    {
+      "articulo": 30000176,
+      "descripcion": "GARBANZO X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 78750
+    },
+    {
+      "articulo": 30000203,
+      "descripcion": "LENTEJA X UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 3094
+    },
+    {
+      "articulo": 30000175,
+      "descripcion": "LENTEJAS X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 77350
+    },
+    {
+      "articulo": 30000197,
+      "descripcion": "MAIZ PIRA X  UND 460G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 1900
+    },
+    {
+      "articulo": 30000116,
+      "descripcion": "MAIZ PIRA X 25 UND 460GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 47500
+    },
+    {
+      "articulo": 30000206,
+      "descripcion": "MAIZ PIRA X  UND 500G",
+      "Uom": "UND",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 2100
+    },
+    {
+      "articulo": 30000185,
+      "descripcion": "MAIZ PIRA X 25 UND 500GR",
+      "Uom": "PACA",
+      "canal": "DISTRIBUIDORES & MAYORISTAS",
+      "Precios": 52500
+    },
+    {
+      "descripcion": "BULTO ARROZ 50 KL",
+      "Uom": "BULTO",
+      "canal": "DISTRIBUIDORES & MAYORISTAS"
+    },
+    {
+      "articulo": "TOTAL"
+    }
+  ],
+  "EMPLEADOS": [
+    {
+      " ": 30000196,
+      "descripcion": "ARROZ BLANCO X  UND 460G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 1600
+    },
+    {
+      " ": 30000110,
+      "descripcion": "ARROZ BLANCO X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 40000
+    },
+    {
+      " ": 30000205,
+      "descripcion": "ARROZ BLANCO X  UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 1700
+    },
+    {
+      " ": 30000179,
+      "descripcion": "ARROZ BLANCO X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 42500
+    },
+    {
+      " ": 30000168,
+      "descripcion": "ARROZ BLANCO X 10 KILOS",
+      "UOM": "LONA",
+      "canal": "EMPLEADOS",
+      "Precios": 40000
+    },
+    {
+      " ": 30000198,
+      "descripcion": "ARVEJA VERDE  X  UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 2102
+    },
+    {
+      " ": 30000169,
+      "descripcion": "ARVEJA VERDE X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 52550
+    },
+    {
+      " ": 30000171,
+      "descripcion": "FRIJOL BOLA ROJA  X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 118850
+    },
+    {
+      " ": 30000199,
+      "descripcion": "FRIJOL BOLA ROJA X  UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 4754
+    },
+    {
+      " ": 30000192,
+      "descripcion": "FRIJOL CARGAMANTO X  UND 460G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 4458
+    },
+    {
+      " ": 30000104,
+      "descripcion": "FRIJOL CARGAMANTO X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 111450
+    },
+    {
+      " ": 30000202,
+      "descripcion": "FRIJOL RADICAL X  UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 4102
+    },
+    {
+      " ": 30000174,
+      "descripcion": "FRIJOL RADICAL X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 102550
+    },
+    {
+      " ": 30000204,
+      "descripcion": "GARBANZO X  UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 3150
+    },
+    {
+      " ": 30000176,
+      "descripcion": "GARBANZO X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 78750
+    },
+    {
+      " ": 30000203,
+      "descripcion": "LENTEJA X UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 3094
+    },
+    {
+      " ": 30000175,
+      "descripcion": "LENTEJAS X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 77350
+    },
+    {
+      " ": 30000197,
+      "descripcion": "MAIZ PIRA X  UND 460G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 1900
+    },
+    {
+      " ": 30000116,
+      "descripcion": "MAIZ PIRA X 25 UND 460GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 47500
+    },
+    {
+      " ": 30000206,
+      "descripcion": "MAIZ PIRA X  UND 500G",
+      "UOM": "UND",
+      "canal": "EMPLEADOS",
+      "Precios": 2100
+    },
+    {
+      " ": 30000185,
+      "descripcion": "MAIZ PIRA X 25 UND 500GR",
+      "UOM": "PACA",
+      "canal": "EMPLEADOS",
+      "Precios": 52500
+    },
+    {
+      " ": 10001057,
+      "descripcion": "LONA VACIAS",
+      "UOM": "LONA",
+      "canal": "EMPLEADOS",
+      "Precios": 1150
+    },
+    {
+      " ": "TOTAL"
+    }
+  ],
+  "INSTITUCIONAL": [
+    {
+      "articulo": 30000196,
+      "descripcion": "ARROZ BLANCO X  UND 460G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 1700
+    },
+    {
+      "articulo": 30000205,
+      "descripcion": "ARROZ BLANCO X  UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 1900
+    },
+    {
+      "articulo": 30000168,
+      "descripcion": "ARROZ BLANCO X 10 KILOS",
+      "canal": "INSTITUCIONAL",
+      "Precios": 40000
+    },
+    {
+      "articulo": 30000110,
+      "descripcion": "ARROZ BLANCO X 25 UND 460GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 42500
+    },
+    {
+      "articulo": 30000179,
+      "descripcion": "ARROZ BLANCO X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 47500
+    },
+    {
+      "articulo": 30000198,
+      "descripcion": "ARVEJA VERDE  X  UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 2102
+    },
+    {
+      "articulo": 30000169,
+      "descripcion": "ARVEJA VERDE X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 52550
+    },
+    {
+      "articulo": 30000171,
+      "descripcion": "FRIJOL BOLA ROJA  X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 118850
+    },
+    {
+      "articulo": 30000199,
+      "descripcion": "FRIJOL BOLA ROJA X  UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 4754
+    },
+    {
+      "articulo": 30000192,
+      "descripcion": "FRIJOL CARGAMANTO X  UND 460G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 4458
+    },
+    {
+      "articulo": 30000104,
+      "descripcion": "FRIJOL CARGAMANTO X 25 UND 460GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 111450
+    },
+    {
+      "articulo": 30000202,
+      "descripcion": "FRIJOL RADICAL X  UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 4102
+    },
+    {
+      "articulo": 30000174,
+      "descripcion": "FRIJOL RADICAL X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 102550
+    },
+    {
+      "articulo": 30000204,
+      "descripcion": "GARBANZO X  UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 3150
+    },
+    {
+      "articulo": 30000176,
+      "descripcion": "GARBANZO X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 78750
+    },
+    {
+      "articulo": 30000203,
+      "descripcion": "LENTEJA X UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 3650
+    },
+    {
+      "articulo": 30000175,
+      "descripcion": "LENTEJAS X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 91250
+    },
+    {
+      "articulo": 30000197,
+      "descripcion": "MAIZ PIRA X  UND 460G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 1900
+    },
+    {
+      "articulo": 30000206,
+      "descripcion": "MAIZ PIRA X  UND 500G",
+      "canal": "INSTITUCIONAL",
+      "Precios": 2100
+    },
+    {
+      "articulo": 30000116,
+      "descripcion": "MAIZ PIRA X 25 UND 460GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 47500
+    },
+    {
+      "articulo": 30000185,
+      "descripcion": "MAIZ PIRA X 25 UND 500GR",
+      "canal": "INSTITUCIONAL",
+      "Precios": 52500
+    },
+    {
+      "articulo": "TOTAL"
+    }
+  ],
+  "MODERNO & GRANDES SUPERFICIES": [
+    {
+      "articulo": 30000196,
+      "descripcion": "ARROZ BLANCO X  UND 460G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 1700
+    },
+    {
+      "articulo": 30000205,
+      "descripcion": "ARROZ BLANCO X  UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 1950
+    },
+    {
+      "articulo": 30000168,
+      "descripcion": "ARROZ BLANCO X 10 KILOS",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 41000
+    },
+    {
+      "articulo": 30000110,
+      "descripcion": "ARROZ BLANCO X 25 UND 460GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 42500
+    },
+    {
+      "articulo": 30000179,
+      "descripcion": "ARROZ BLANCO X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 48750
+    },
+    {
+      "articulo": 30000198,
+      "descripcion": "ARVEJA VERDE  X  UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 2154
+    },
+    {
+      "articulo": 30000169,
+      "descripcion": "ARVEJA VERDE X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 53850
+    },
+    {
+      "articulo": 30000171,
+      "descripcion": "FRIJOL BOLA ROJA  X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 122750
+    },
+    {
+      "articulo": 30000199,
+      "descripcion": "FRIJOL BOLA ROJA X  UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 4910
+    },
+    {
+      "articulo": 30000192,
+      "descripcion": "FRIJOL CARGAMANTO X  UND 460G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 4516
+    },
+    {
+      "articulo": 30000104,
+      "descripcion": "FRIJOL CARGAMANTO X 25 UND 460GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 112900
+    },
+    {
+      "articulo": 30000202,
+      "descripcion": "FRIJOL RADICAL X  UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 4254
+    },
+    {
+      "articulo": 30000174,
+      "descripcion": "FRIJOL RADICAL X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 106350
+    },
+    {
+      "articulo": 30000204,
+      "descripcion": "GARBANZO X  UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 3300
+    },
+    {
+      "articulo": 30000176,
+      "descripcion": "GARBANZO X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 82500
+    },
+    {
+      "articulo": 30000203,
+      "descripcion": "LENTEJA X UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 3650
+    },
+    {
+      "articulo": 30000175,
+      "descripcion": "LENTEJAS X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 91250
+    },
+    {
+      "articulo": 30000197,
+      "descripcion": "MAIZ PIRA X  UND 460G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 1900
+    },
+    {
+      "articulo": 30000206,
+      "descripcion": "MAIZ PIRA X  UND 500G",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 2200
+    },
+    {
+      "articulo": 30000116,
+      "descripcion": "MAIZ PIRA X 25 UND 460GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 47500
+    },
+    {
+      "articulo": 30000185,
+      "descripcion": "MAIZ PIRA X 25 UND 500GR",
+      "canal": "MODERNO & GRANDES SUPERFICIES",
+      "Precios": 55000
+    }
+  ]
+}
