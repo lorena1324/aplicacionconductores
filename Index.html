@@ -42,6 +42,13 @@
           Facturas
         </button>
         <button
+          onclick="showSection('editarPrecios')"
+          id="btnEditarPrecios"
+          class="coordinator-only hidden"
+        >
+          Editar Precios
+        </button>
+        <button
           id="ventasBtn"
           onclick="showSection('ventas')"
           class="driver-only"
@@ -219,6 +226,20 @@
             conductores.
           </p>
           <div id="supervisionVentasContent"></div>
+        </div>
+
+        <!-- HISTÓRICO DE VENTAS (COORDINADORA) -->
+        <div id="historialVentas" class="card hidden">
+          <h2>Histórico de Productos Vendidos</h2>
+          <p>Resumen de productos vendidos y total de ventas.</p>
+          <div id="historialVentasContent"></div>
+        </div>
+
+        <!-- EDITAR PRECIOS (COORDINADORA) -->
+        <div id="editarPrecios" class="card hidden">
+          <h2>Gestión de Precios de Productos</h2>
+          <p>Edita los precios del catálogo de productos actuales.</p>
+          <div id="editarPreciosContent"></div>
         </div>
       </main>
     </div>

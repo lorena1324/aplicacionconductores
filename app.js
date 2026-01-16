@@ -18,6 +18,10 @@ let inventory = {};
 let invoices = {};
 // Movimientos de productos (registro histórico)
 let movements = [];
+// Preset para filtrar el historial desde tarjetas del panel
+let movementsTypePreset = "";
+// Preset para abrir el histórico de ventas desde el panel
+let salesHistoryPreset = "";
 // Catálogo de productos
 let productsCatalog = [];
 // Timestamp para sincronización en tiempo real
@@ -218,6 +222,10 @@ function setupCoordinatorNavigation() {
   const btnFacturas = document.getElementById("btnFacturas");
   if (btnFacturas) btnFacturas.classList.remove("hidden");
 
+  // Mostrar botón de Editar Precios para coordinadora
+  const btnEditarPrecios = document.getElementById("btnEditarPrecios");
+  if (btnEditarPrecios) btnEditarPrecios.classList.remove("hidden");
+
   // Actualizar título del rol
   const roleTitle = document.getElementById("roleTitle");
   if (roleTitle) roleTitle.textContent = "Coordinadora";
@@ -248,11 +256,17 @@ function setupDriverNavigation() {
     "gestionInventario",
     "controlMovimientos",
     "supervisionVentas",
+    "historialVentas",
+    "editarPrecios",
   ];
   coordinatorPanels.forEach((id) => {
     const panel = document.getElementById(id);
     if (panel) panel.classList.add("hidden");
   });
+
+  // Ocultar botón de Editar Precios para conductores
+  const btnEditarPrecios = document.getElementById("btnEditarPrecios");
+  if (btnEditarPrecios) btnEditarPrecios.classList.add("hidden");
 
   // Ocultar panel de dashboard para conductores
   const dashboardPanel = document.getElementById("dashboard");
@@ -284,6 +298,7 @@ function showSection(panelId) {
     "gestionInventario",
     "controlMovimientos",
     "supervisionVentas",
+    "editarPrecios",
   ];
 
   const allPanels = [...commonPanels, ...coordinatorPanels];
@@ -361,6 +376,14 @@ function showSection(panelId) {
       }, 50);
     } else if (panelId === "ventas") {
       renderVentas();
+    } else if (panelId === "controlMovimientos") {
+      renderControlMovimientos();
+    } else if (panelId === "supervisionVentas") {
+      renderSupervisionVentas();
+    } else if (panelId === "historialVentas") {
+      renderHistorialVentas();
+    } else if (panelId === "editarPrecios") {
+      renderEditarPrecios();
     }
   } catch (error) {
     console.error(`Error al renderizar el panel ${panelId}:`, error);
@@ -375,6 +398,16 @@ function showSection(panelId) {
 
 function showPanel(panelId) {
   showSection(panelId);
+}
+
+function openMovementsHistory(type) {
+  movementsTypePreset = type || "";
+  showSection("controlMovimientos");
+}
+
+function openSalesHistory(preset) {
+  salesHistoryPreset = preset || "";
+  showSection("historialVentas");
 }
 
 /* =========================
@@ -431,12 +464,12 @@ function renderDashboard() {
   cont.innerHTML = `
     <div class="dashboard-summary">
       <div class="summary-cards">
-        <div class="summary-card" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+        <div class="summary-card clickable" onclick="openMovementsHistory('asignacion')" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
           <h5>Total Productos Asignados</h5>
           <p class="summary-value">${totalProducts}</p>
           <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">${totalInventoryQty} unidades</p>
         </div>
-        <div class="summary-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        <div class="summary-card clickable" onclick="openSalesHistory('productos')" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
           <h5>Total Facturado</h5>
           <p class="summary-value">$${totalSales.toLocaleString()}</p>
           <p style="font-size: 12px; opacity: 0.9; margin-top: 5px;">${totalInvoices} facturas</p>
@@ -585,7 +618,10 @@ function renderInventario() {
             <label>Cantidad:</label>
             <input id="invQty" type="number" min="1" placeholder="Cantidad" class="form-input">
           </div>
-          <button onclick="assignInventory()" class="btn-primary">Asignar Producto</button>
+          <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+            <button onclick="assignInventory()" class="btn-primary">Asignar Producto</button>
+            <button onclick="downloadAssignedInventoryPDF()" class="btn-download-pdf">📄 Descargar PDF Inventario</button>
+          </div>
         </div>
         
         <div style="margin-top: 30px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
@@ -719,6 +755,28 @@ function renderInventario() {
             <input id="telefonoInvoice" placeholder="Número de teléfono" 
                    class="form-input" style="flex: 1;" type="tel">
           </div>
+
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Método de Pago:</label>
+            <select id="paymentMethodInvoice" class="form-select" style="flex: 1;" onchange="toggleInstallmentsInvoice()">
+              <option value="efectivo">Efectivo</option>
+              <option value="tarjeta">Tarjeta</option>
+            </select>
+          </div>
+
+          <div id="installmentsContainerInvoice" class="form-row" style="margin-bottom: 15px; display: none;">
+            <label style="min-width: 150px;">Número de Cuotas:</label>
+            <select id="installmentsInvoice" class="form-select" style="flex: 1;">
+              ${Array.from({ length: 48 }, (_, i) => i + 1)
+                .map(
+                  (n) =>
+                    `<option value="${n}">${n} cuota${
+                      n > 1 ? "s" : ""
+                    }</option>`
+                )
+                .join("")}
+            </select>
+          </div>
           
           <div style="margin-top: 25px; padding-top: 20px; border-top: 2px solid #e2e8f0;">
             <h4 style="margin-bottom: 15px;">Productos de la Factura</h4>
@@ -747,6 +805,13 @@ function renderInventario() {
         </div>
       `;
   }
+}
+
+function toggleInstallmentsInvoice() {
+  const method = document.getElementById("paymentMethodInvoice")?.value;
+  const container = document.getElementById("installmentsContainerInvoice");
+  if (!container) return;
+  container.style.display = method === "tarjeta" ? "flex" : "none";
 }
 
 function renderTodayInventorySummary() {
@@ -1053,6 +1118,8 @@ function renderControlMovimientos() {
   const currentDriver = document.getElementById("filterDriver")?.value || "";
   const currentDate = document.getElementById("filterDate")?.value || "";
   const currentProduct = document.getElementById("filterProduct")?.value || "";
+  const currentType =
+    document.getElementById("filterType")?.value || movementsTypePreset || "";
 
   cont.innerHTML = `
     <div class="filter-bar">
@@ -1077,6 +1144,21 @@ function renderControlMovimientos() {
     currentDate === today() ? "selected" : ""
   }>Hoy</option>
       </select>
+      <select id="filterType" onchange="renderControlMovimientos()">
+        <option value="">Todos los tipos</option>
+        <option value="asignacion" ${
+          currentType === "asignacion" ? "selected" : ""
+        }>Asignación</option>
+        <option value="modificacion" ${
+          currentType === "modificacion" ? "selected" : ""
+        }>Modificación</option>
+        <option value="eliminacion" ${
+          currentType === "eliminacion" ? "selected" : ""
+        }>Eliminación</option>
+        <option value="venta" ${
+          currentType === "venta" ? "selected" : ""
+        }>Venta</option>
+      </select>
       <input type="text" id="filterProduct" placeholder="Filtrar por producto" value="${currentProduct}" onkeyup="renderControlMovimientos()">
     </div>
     <div class="movements-table">
@@ -1098,6 +1180,9 @@ function renderControlMovimientos() {
   const filterDate = document.getElementById("filterDate")?.value || "";
   const filterProduct =
     document.getElementById("filterProduct")?.value.toLowerCase() || "";
+  const filterType = document.getElementById("filterType")?.value || "";
+
+  movementsTypePreset = "";
 
   let filteredMovements = [...movements].reverse(); // Más recientes primero
 
@@ -1113,6 +1198,9 @@ function renderControlMovimientos() {
     filteredMovements = filteredMovements.filter((m) =>
       m.product.toLowerCase().includes(filterProduct)
     );
+  }
+  if (filterType) {
+    filteredMovements = filteredMovements.filter((m) => m.type === filterType);
   }
 
   const movementsList = document.getElementById("movementsList");
@@ -1187,6 +1275,89 @@ function renderSupervisionVentas() {
     console.error("Error al renderizar supervisión de ventas:", error);
     cont.innerHTML = `<p style="color: #ef4444; padding: 20px;">Error al cargar la información. Por favor recarga la página.</p>`;
   }
+}
+
+function renderHistorialVentas() {
+  const cont = document.getElementById("historialVentasContent");
+  if (!cont) {
+    console.error("No se encontró el elemento historialVentasContent");
+    return;
+  }
+
+  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  let totalSales = 0;
+  let totalInvoices = 0;
+  let totalQty = 0;
+  const productMap = new Map();
+
+  drivers.forEach((driver) => {
+    const driverInvoices = invoices[driver] || [];
+    totalInvoices += driverInvoices.length;
+    driverInvoices.forEach((inv) => {
+      totalSales += inv.total || 0;
+      (inv.items || []).forEach((item) => {
+        const key = item.product || "Sin producto";
+        const subtotal = item.subtotal ?? item.qty * item.price;
+        const current = productMap.get(key) || {
+          product: key,
+          qty: 0,
+          subtotal: 0,
+        };
+        current.qty += item.qty || 0;
+        current.subtotal += subtotal || 0;
+        totalQty += item.qty || 0;
+        productMap.set(key, current);
+      });
+    });
+  });
+
+  salesHistoryPreset = "";
+
+  const products = Array.from(productMap.values()).sort(
+    (a, b) => b.subtotal - a.subtotal
+  );
+
+  cont.innerHTML = `
+    <div class="summary-cards">
+      <div class="summary-card" style="background: linear-gradient(135deg, #10b981 0%, #059669 100%);">
+        <h5>Total de Ventas</h5>
+        <p class="summary-value">$${totalSales.toLocaleString()}</p>
+      </div>
+      <div class="summary-card" style="background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);">
+        <h5>Total Facturas</h5>
+        <p class="summary-value">${totalInvoices}</p>
+      </div>
+      <div class="summary-card" style="background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);">
+        <h5>Unidades Vendidas</h5>
+        <p class="summary-value">${totalQty}</p>
+      </div>
+    </div>
+
+    <div class="movements-table">
+      <div class="table-header">
+        <span>Producto</span>
+        <span>Cantidad</span>
+        <span>Total</span>
+      </div>
+      <div id="historialVentasList">
+        ${
+          products.length === 0
+            ? '<div class="table-row"><span colspan="3" style="text-align: center; padding: 20px; color: #64748b;">No hay ventas registradas</span></div>'
+            : products
+                .map(
+                  (p) => `
+            <div class="table-row">
+              <span><strong>${p.product}</strong></span>
+              <span>${p.qty}</span>
+              <span style="color: #10b981;"><strong>$${p.subtotal.toLocaleString()}</strong></span>
+            </div>
+          `
+                )
+                .join("")
+        }
+      </div>
+    </div>
+  `;
 }
 
 function renderSalesSummary() {
@@ -1509,6 +1680,10 @@ function addToInvoice(product, index, precio) {
     return;
   }
 
+  // Buscar el código del producto en el catálogo
+  const productInfo = productsCatalog.find((p) => p.descripcion === product);
+  const codigo = productInfo?.codigo || "";
+
   // Verificar si el producto ya está en la factura
   const existingItem = invoiceItems.find((item) => item.product === product);
 
@@ -1525,6 +1700,7 @@ function addToInvoice(product, index, precio) {
     // Agregar nuevo item a la factura
     invoiceItems.push({
       product: product,
+      codigo: codigo,
       qty: 1,
       price: precio || 0,
       subtotal: precio || 0,
@@ -1556,8 +1732,9 @@ function updateInvoiceDisplay() {
 
   let total = 0;
   invoiceList.innerHTML = `
-    <div class="invoice-items-header">
+    <div class="invoice-items-header" style="grid-template-columns: 2fr 0.8fr 1fr 1fr 1fr 1fr;">
       <span>Producto</span>
+      <span>ID</span>
       <span>Cantidad</span>
       <span>Precio Unit.</span>
       <span>Subtotal</span>
@@ -1567,8 +1744,11 @@ function updateInvoiceDisplay() {
       .map((item, idx) => {
         total += item.subtotal;
         return `
-        <div class="invoice-item-row">
+        <div class="invoice-item-row" style="grid-template-columns: 2fr 0.8fr 1fr 1fr 1fr 1fr;">
           <span>${item.product}</span>
+          <span style="color: #64748b; font-size: 13px;">${
+            item.codigo || "N/A"
+          }</span>
           <span>
             <button onclick="decrementInvoiceQty(${idx})" class="qty-btn-small">-</button>
             <span style="margin: 0 10px; font-weight: 600;">${item.qty}</span>
@@ -1669,6 +1849,12 @@ function finalizeInvoiceFromInventory() {
   const cc = document.getElementById("ccInvoice")?.value.trim() || "";
   const telefono =
     document.getElementById("telefonoInvoice")?.value.trim() || "";
+  const paymentMethod =
+    document.getElementById("paymentMethodInvoice")?.value || "efectivo";
+  const installmentsValue =
+    document.getElementById("installmentsInvoice")?.value || "1";
+  const installments =
+    paymentMethod === "tarjeta" ? parseInt(installmentsValue, 10) : null;
 
   if (!businessName) {
     alert("Por favor ingresa el nombre del negocio");
@@ -1680,6 +1866,11 @@ function finalizeInvoiceFromInventory() {
     return;
   }
 
+  if (paymentMethod === "tarjeta" && (!installments || installments < 1)) {
+    alert("Por favor selecciona el número de cuotas");
+    return;
+  }
+
   const date = today();
   let total = 0;
   const saleItems = [];
@@ -1688,6 +1879,7 @@ function finalizeInvoiceFromInventory() {
   invoiceItems.forEach((item) => {
     saleItems.push({
       product: item.product,
+      codigo: item.codigo || "",
       qty: item.qty,
       price: item.price,
       subtotal: item.subtotal,
@@ -1723,6 +1915,12 @@ function finalizeInvoiceFromInventory() {
   invoices[currentUser].push({
     date: date,
     negocio: businessName,
+    razonSocial: razonSocial,
+    responsable: responsable,
+    cc: cc,
+    telefono: telefono,
+    paymentMethod: paymentMethod,
+    installments: installments,
     items: saleItems,
     total: total,
     timestamp: new Date().toISOString(),
@@ -1732,6 +1930,12 @@ function finalizeInvoiceFromInventory() {
   const invoice = {
     date: date,
     negocio: businessName,
+    razonSocial: razonSocial,
+    responsable: responsable,
+    cc: cc,
+    telefono: telefono,
+    paymentMethod: paymentMethod,
+    installments: installments,
     items: saleItems,
     total: total,
     timestamp: new Date().toISOString(),
@@ -1753,6 +1957,9 @@ function finalizeInvoiceFromInventory() {
   document.getElementById("responsableInvoice").value = "";
   document.getElementById("ccInvoice").value = "";
   document.getElementById("telefonoInvoice").value = "";
+  document.getElementById("paymentMethodInvoice").value = "efectivo";
+  document.getElementById("installmentsInvoice").value = "1";
+  toggleInstallmentsInvoice();
 
   alert(`✓ Factura generada correctamente. Total: $${total.toLocaleString()}`);
 
@@ -1901,7 +2108,13 @@ function finalizeSale() {
       const price = parseFloat(match[3]);
       const subtotal = parseFloat(match[4]);
 
-      saleItems.push({ product, qty, price, subtotal });
+      // Buscar el código del producto en el catálogo
+      const productInfo = productsCatalog.find(
+        (p) => p.descripcion === product
+      );
+      const codigo = productInfo?.codigo || "";
+
+      saleItems.push({ product, codigo, qty, price, subtotal });
       total += subtotal;
 
       // Reducir inventario
@@ -2068,17 +2281,57 @@ function generateInvoicePDF(invoice) {
     clientInfoYPos += 10;
   }
 
-  // Fecha y número de factura
+  if (invoice.paymentMethod) {
+    const metodoLabel =
+      invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo";
+    doc.setFont("helvetica", "bold");
+    doc.text("Método de pago:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(metodoLabel, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.paymentMethod === "tarjeta" && invoice.installments) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Cuotas:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(invoice.installments), 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.paymentMethod) {
+    const metodoLabel =
+      invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo";
+    doc.setFont("helvetica", "bold");
+    doc.text("Método de pago:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(metodoLabel, 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  if (invoice.paymentMethod === "tarjeta" && invoice.installments) {
+    doc.setFont("helvetica", "bold");
+    doc.text("Cuotas:", 150, clientInfoYPos);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(invoice.installments), 150, clientInfoYPos + 5);
+    clientInfoYPos += 10;
+  }
+
+  // Fecha de factura
   const dateYPos = Math.max(clientInfoYPos, yPos + 35);
   doc.setFont("helvetica", "bold");
   doc.text("FECHA:", 150, dateYPos);
   doc.setFont("helvetica", "normal");
   doc.text(invoiceDate, 150, dateYPos + 5);
-
+  // Número de factura en la esquina superior derecha (negrilla)
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("FACTURA #:", 150, dateYPos + 12);
-  doc.setFont("helvetica", "normal");
-  doc.text(String(invoiceNumber).padStart(6, "0"), 150, dateYPos + 17);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`FACTURA #${String(invoiceNumber).padStart(6, "0")}`, 195, 18, {
+    align: "right",
+  });
+  doc.setFontSize(10);
+  doc.setTextColor(...textColor);
 
   // Ajustar yPos para la tabla de productos
   yPos = Math.max(50 + 45, dateYPos + 25);
@@ -2096,9 +2349,10 @@ function generateInvoicePDF(invoice) {
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...textColor);
 
-  doc.text("PRODUCTO", 25, yPos + 7);
-  doc.text("CANT.", 100, yPos + 7);
-  doc.text("PRECIO UNIT.", 125, yPos + 7);
+  doc.text("ID", 25, yPos + 7);
+  doc.text("PRODUCTO", 45, yPos + 7);
+  doc.text("CANT.", 115, yPos + 7);
+  doc.text("PRECIO", 135, yPos + 7);
   doc.text("SUBTOTAL", 165, yPos + 7, { align: "right" });
 
   yPos += 12;
@@ -2115,15 +2369,21 @@ function generateInvoicePDF(invoice) {
       doc.rect(20, yPos - 3, 170, 8, "F");
     }
 
+    // Mostrar código/ID del producto
+    const codigo = item.codigo || "N/A";
+    doc.setFontSize(8);
+    doc.text(String(codigo), 25, yPos + 2);
+
     // Ajustar texto largo del producto
+    doc.setFontSize(9);
     let productText = item.product;
-    if (productText.length > 35) {
-      productText = productText.substring(0, 32) + "...";
+    if (productText.length > 30) {
+      productText = productText.substring(0, 27) + "...";
     }
 
-    doc.text(productText, 25, yPos + 2);
-    doc.text(String(item.qty), 100, yPos + 2);
-    doc.text(`$${item.price.toLocaleString()}`, 125, yPos + 2);
+    doc.text(productText, 45, yPos + 2);
+    doc.text(String(item.qty), 115, yPos + 2);
+    doc.text(`$${item.price.toLocaleString()}`, 135, yPos + 2);
     doc.text(`$${item.subtotal.toLocaleString()}`, 165, yPos + 2, {
       align: "right",
     });
@@ -2167,6 +2427,191 @@ function generateInvoicePDF(invoice) {
   )}_${invoice.date.replace(/-/g, "")}.pdf`;
 
   // Descargar el PDF
+  doc.save(fileName);
+}
+
+/* =========================
+   PDF INVENTARIO ASIGNADO
+========================= */
+function downloadAssignedInventoryPDF() {
+  const driver = document.getElementById("invDriver")?.value;
+  if (!driver) {
+    alert("Por favor selecciona un conductor para descargar el PDF");
+    return;
+  }
+
+  const date = today();
+  const driverInv = inventory[date]?.[driver] || {};
+
+  if (!driverInv || Object.keys(driverInv).length === 0) {
+    alert("El conductor seleccionado no tiene inventario asignado hoy.");
+    return;
+  }
+
+  generateInventoryAssignmentPDF(driver, date, driverInv);
+}
+
+function generateInventoryAssignmentPDF(driver, date, driverInv) {
+  // Verificar que jsPDF esté disponible
+  if (typeof window.jspdf === "undefined") {
+    console.error("jsPDF no está disponible");
+    alert(
+      "Error: No se pudo generar el PDF. La biblioteca jsPDF no está cargada."
+    );
+    return;
+  }
+
+  const { jsPDF } = window.jspdf;
+  const doc = new jsPDF();
+
+  // Configuración de colores
+  const primaryColor = [37, 99, 235]; // #2563eb
+  const secondaryColor = [16, 185, 129]; // #10b981
+  const textColor = [30, 41, 59]; // #1e293b
+  const grayColor = [100, 116, 139]; // #64748b
+
+  let yPos = 20;
+  const pageHeight = doc.internal.pageSize.height || 297;
+  const bottomMargin = 20;
+
+  const driverName = driver.replace("conductor", "Conductor ");
+
+  // Encabezado
+  doc.setFillColor(...primaryColor);
+  doc.rect(0, 0, 210, 40, "F");
+
+  doc.setTextColor(255, 255, 255);
+  doc.setFontSize(20);
+  doc.setFont("helvetica", "bold");
+  doc.text("FACTURA DE INVENTARIO", 105, 20, { align: "center" });
+
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "normal");
+  doc.text("Asignación de inventario diario", 105, 30, { align: "center" });
+
+  yPos = 50;
+
+  // Información general
+  doc.setTextColor(...textColor);
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("CONDUCTOR:", 20, yPos);
+  doc.setFont("helvetica", "normal");
+  doc.text(driverName, 20, yPos + 5);
+
+  doc.setFont("helvetica", "bold");
+  doc.text("FECHA:", 150, yPos);
+  doc.setFont("helvetica", "normal");
+  doc.text(formatDate(date), 150, yPos + 5);
+
+  yPos += 18;
+
+  const items = Object.keys(driverInv).map((product) => {
+    const qty = driverInv[product];
+    const productInfo = productsCatalog.find((p) => p.descripcion === product);
+    const precio = productInfo?.precio || 0;
+    return {
+      codigo: productInfo?.codigo || "",
+      unidad: productInfo?.unidad || "",
+      product,
+      qty,
+      price: precio,
+      subtotal: qty * precio,
+    };
+  });
+
+  const totalQty = items.reduce((sum, item) => sum + item.qty, 0);
+  const totalValue = items.reduce((sum, item) => sum + item.subtotal, 0);
+
+  doc.setTextColor(...grayColor);
+  doc.setFontSize(9);
+  doc.text(`Productos: ${items.length} | Unidades: ${totalQty}`, 20, yPos);
+  yPos += 8;
+
+  const addTableHeader = () => {
+    doc.setFillColor(241, 245, 249);
+    doc.rect(20, yPos, 170, 10, "F");
+
+    doc.setFontSize(8);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(...textColor);
+    doc.text("ID", 22, yPos + 7);
+    doc.text("PRODUCTO", 35, yPos + 7);
+    doc.text("UOM", 120, yPos + 7);
+    doc.text("CANT.", 135, yPos + 7);
+    doc.text("PRECIO", 155, yPos + 7);
+    doc.text("SUBTOTAL", 190, yPos + 7, { align: "right" });
+
+    yPos += 12;
+  };
+
+  const ensureSpace = (extraSpace = 10) => {
+    if (yPos + extraSpace > pageHeight - bottomMargin) {
+      doc.addPage();
+      yPos = 20;
+      doc.setFontSize(10);
+      doc.setTextColor(...textColor);
+      doc.setFont("helvetica", "bold");
+      doc.text(`Inventario asignado - ${driverName}`, 20, yPos);
+      doc.setFont("helvetica", "normal");
+      yPos += 6;
+      addTableHeader();
+    }
+  };
+
+  addTableHeader();
+
+  // Filas
+  doc.setFont("helvetica", "normal");
+  doc.setFontSize(8);
+  doc.setTextColor(...textColor);
+
+  items.forEach((item, index) => {
+    ensureSpace(10);
+
+    if (index % 2 === 0) {
+      doc.setFillColor(248, 250, 252);
+      doc.rect(20, yPos - 3, 170, 8, "F");
+    }
+
+    const codigo = item.codigo || "N/A";
+    let productText = item.product;
+    if (productText.length > 40) {
+      productText = productText.substring(0, 37) + "...";
+    }
+
+    doc.text(String(codigo), 22, yPos + 2);
+    doc.text(productText, 35, yPos + 2);
+    doc.text(String(item.unidad || "UND"), 120, yPos + 2);
+    doc.text(String(item.qty), 135, yPos + 2);
+    doc.text(`$${item.price.toLocaleString()}`, 155, yPos + 2);
+    doc.text(`$${item.subtotal.toLocaleString()}`, 190, yPos + 2, {
+      align: "right",
+    });
+
+    yPos += 8;
+  });
+
+  ensureSpace(20);
+
+  // Total
+  doc.setDrawColor(...grayColor);
+  doc.line(20, yPos, 190, yPos);
+  yPos += 10;
+
+  doc.setFillColor(...secondaryColor);
+  doc.rect(100, yPos, 90, 12, "F");
+  doc.setFontSize(11);
+  doc.setFont("helvetica", "bold");
+  doc.setTextColor(255, 255, 255);
+  doc.text("TOTAL:", 110, yPos + 8);
+  doc.text(`$${totalValue.toLocaleString()}`, 185, yPos + 8, {
+    align: "right",
+  });
+
+  // Nombre del archivo
+  const safeDriver = driverName.replace(/[^a-z0-9]/gi, "_");
+  const fileName = `Inventario_${safeDriver}_${date.replace(/-/g, "")}.pdf`;
   doc.save(fileName);
 }
 
@@ -2270,17 +2715,21 @@ function generateInvoicePDFForDriver(invoice, driver) {
     clientInfoYPos += 10;
   }
 
-  // Fecha y número de factura
+  // Fecha de factura
   const dateYPos = Math.max(clientInfoYPos, yPos + 35);
   doc.setFont("helvetica", "bold");
   doc.text("FECHA:", 150, dateYPos);
   doc.setFont("helvetica", "normal");
   doc.text(invoiceDate, 150, dateYPos + 5);
-
+  // Número de factura en la esquina superior derecha (negrilla)
+  doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
-  doc.text("FACTURA #:", 150, dateYPos + 12);
-  doc.setFont("helvetica", "normal");
-  doc.text(String(invoiceNumber).padStart(6, "0"), 150, dateYPos + 17);
+  doc.setTextColor(255, 255, 255);
+  doc.text(`FACTURA #${String(invoiceNumber).padStart(6, "0")}`, 195, 18, {
+    align: "right",
+  });
+  doc.setFontSize(10);
+  doc.setTextColor(...textColor);
 
   // Ajustar yPos para la tabla de productos
   yPos = Math.max(50 + 45, dateYPos + 25);
@@ -2298,9 +2747,10 @@ function generateInvoicePDFForDriver(invoice, driver) {
   doc.setFont("helvetica", "bold");
   doc.setTextColor(...textColor);
 
-  doc.text("PRODUCTO", 25, yPos + 7);
-  doc.text("CANT.", 100, yPos + 7);
-  doc.text("PRECIO UNIT.", 125, yPos + 7);
+  doc.text("ID", 25, yPos + 7);
+  doc.text("PRODUCTO", 45, yPos + 7);
+  doc.text("CANT.", 115, yPos + 7);
+  doc.text("PRECIO", 135, yPos + 7);
   doc.text("SUBTOTAL", 165, yPos + 7, { align: "right" });
 
   yPos += 12;
@@ -2317,15 +2767,21 @@ function generateInvoicePDFForDriver(invoice, driver) {
       doc.rect(20, yPos - 3, 170, 8, "F");
     }
 
+    // Mostrar código/ID del producto
+    const codigo = item.codigo || "N/A";
+    doc.setFontSize(8);
+    doc.text(String(codigo), 25, yPos + 2);
+
     // Ajustar texto largo del producto
+    doc.setFontSize(9);
     let productText = item.product;
-    if (productText.length > 35) {
-      productText = productText.substring(0, 32) + "...";
+    if (productText.length > 30) {
+      productText = productText.substring(0, 27) + "...";
     }
 
-    doc.text(productText, 25, yPos + 2);
-    doc.text(String(item.qty), 100, yPos + 2);
-    doc.text(`$${item.price.toLocaleString()}`, 125, yPos + 2);
+    doc.text(productText, 45, yPos + 2);
+    doc.text(String(item.qty), 115, yPos + 2);
+    doc.text(`$${item.price.toLocaleString()}`, 135, yPos + 2);
     doc.text(`$${item.subtotal.toLocaleString()}`, 165, yPos + 2, {
       align: "right",
     });
@@ -2676,7 +3132,9 @@ function refreshCurrentView() {
   if (currentPanel === "gestionInventario") renderGestionInventario();
   if (currentPanel === "controlMovimientos") renderControlMovimientos();
   if (currentPanel === "supervisionVentas") renderSupervisionVentas();
+  if (currentPanel === "historialVentas") renderHistorialVentas();
   if (currentPanel === "facturas") renderFacturas();
+  if (currentPanel === "editarPrecios") renderEditarPrecios();
 }
 
 function getCurrentVisiblePanel() {
@@ -2688,6 +3146,8 @@ function getCurrentVisiblePanel() {
     "gestionInventario",
     "controlMovimientos",
     "supervisionVentas",
+    "historialVentas",
+    "editarPrecios",
   ];
   for (let panel of panels) {
     const el = document.getElementById(panel);
@@ -2736,6 +3196,227 @@ function showSyncNotification(message) {
 window.addEventListener("beforeunload", () => {
   stopRealtimeSync();
 });
+
+/* =========================
+   EDITAR PRECIOS (COORDINADORA)
+========================= */
+function renderEditarPrecios() {
+  const cont = document.getElementById("editarPreciosContent");
+  if (!cont) {
+    console.error("No se encontró el elemento editarPreciosContent");
+    return;
+  }
+
+  // Asegurar que el catálogo de productos esté cargado
+  if (productsCatalog.length === 0) {
+    cont.innerHTML = `
+      <div style="padding: 40px; text-align: center;">
+        <p style="color: #64748b; font-size: 16px;">Cargando productos...</p>
+      </div>
+    `;
+    // Intentar cargar productos
+    loadProductsCatalog().then(() => {
+      renderEditarPrecios();
+    });
+    return;
+  }
+
+  // Crear tabla de productos con precios editables
+  cont.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div>
+          <h3 style="margin: 0 0 5px 0; color: #1e293b;">Listado de Productos</h3>
+          <p style="color: #64748b; font-size: 14px; margin: 0;">Total: ${
+            productsCatalog.length
+          } productos</p>
+        </div>
+        <button onclick="guardarTodosLosPrecios()" class="btn-primary">
+          💾 Guardar Todos los Cambios
+        </button>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <input 
+          type="text" 
+          id="buscarProductoPrecio" 
+          placeholder="Buscar producto por nombre..." 
+          class="form-input"
+          style="width: 100%; max-width: 400px;"
+          onkeyup="filtrarProductosPorPrecio()"
+        >
+      </div>
+    </div>
+
+    <div class="productos-precios-table" style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff;">
+      <div class="table-header" style="grid-template-columns: 3fr 1fr 1.5fr 1.5fr 1fr;">
+        <span>Producto</span>
+        <span>Código</span>
+        <span>Unidad</span>
+        <span>Precio Actual</span>
+        <span>Acción</span>
+      </div>
+      <div id="listaProductosPrecios" style="max-height: 600px; overflow-y: auto;">
+        ${productsCatalog
+          .map(
+            (product, index) => `
+          <div class="table-row producto-precio-row" data-product-index="${index}" style="grid-template-columns: 3fr 1fr 1.5fr 1.5fr 1fr;">
+            <span>
+              <strong>${product.descripcion}</strong>
+              ${
+                product.categoria
+                  ? `<span style="color: #64748b; font-size: 12px; display: block; margin-top: 4px;">${product.categoria}</span>`
+                  : ""
+              }
+            </span>
+            <span>${product.codigo || "N/A"}</span>
+            <span>${product.unidad || "UND"}</span>
+            <span>
+              <input 
+                type="number" 
+                id="precio-${index}" 
+                value="${product.precio || 0}" 
+                min="0" 
+                step="0.01"
+                class="precio-input" 
+                style="width: 100%; padding: 8px; border: 2px solid #cbd5e1; border-radius: 6px; font-size: 14px;"
+                onchange="marcarPrecioEditado(${index})"
+                data-original-price="${product.precio || 0}"
+              >
+            </span>
+            <span>
+              <button onclick="guardarPrecioIndividual(${index})" class="btn-guardar-precio" title="Guardar precio">
+                💾 Guardar
+              </button>
+            </span>
+          </div>
+        `
+          )
+          .join("")}
+      </div>
+    </div>
+
+    <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <p style="margin: 0; color: #64748b; font-size: 13px;">
+        💡 <strong>Nota:</strong> Los cambios en los precios se aplicarán inmediatamente al guardar. 
+        Los nuevos precios se utilizarán en las próximas facturas y asignaciones de inventario.
+      </p>
+    </div>
+  `;
+}
+
+function marcarPrecioEditado(index) {
+  const input = document.getElementById(`precio-${index}`);
+  const row = document.querySelector(`[data-product-index="${index}"]`);
+  if (input && row) {
+    const originalPrice = parseFloat(input.dataset.originalPrice || 0);
+    const newPrice = parseFloat(input.value || 0);
+
+    if (newPrice !== originalPrice) {
+      row.style.background = "#fff7ed";
+      row.style.borderColor = "#fb923c";
+    } else {
+      row.style.background = "";
+      row.style.borderColor = "";
+    }
+  }
+}
+
+function guardarPrecioIndividual(index) {
+  const input = document.getElementById(`precio-${index}`);
+  if (!input) return;
+
+  const newPrice = parseFloat(input.value || 0);
+  if (isNaN(newPrice) || newPrice < 0) {
+    alert("Por favor ingresa un precio válido mayor o igual a 0");
+    return;
+  }
+
+  if (index >= 0 && index < productsCatalog.length) {
+    const product = productsCatalog[index];
+    const oldPrice = product.precio || 0;
+    product.precio = newPrice;
+
+    // Actualizar en localStorage
+    localStorage.setItem("productsCatalog", JSON.stringify(productsCatalog));
+
+    // Actualizar precio original en el input
+    input.dataset.originalPrice = newPrice.toString();
+
+    // Remover marca visual de cambio
+    const row = document.querySelector(`[data-product-index="${index}"]`);
+    if (row) {
+      row.style.background = "";
+      row.style.borderColor = "";
+    }
+
+    alert(
+      `✓ Precio de "${
+        product.descripcion
+      }" actualizado: $${oldPrice.toLocaleString()} → $${newPrice.toLocaleString()}`
+    );
+  }
+}
+
+function guardarTodosLosPrecios() {
+  let cambiosGuardados = 0;
+  const cambios = [];
+
+  productsCatalog.forEach((product, index) => {
+    const input = document.getElementById(`precio-${index}`);
+    if (input) {
+      const newPrice = parseFloat(input.value || 0);
+      const originalPrice = parseFloat(input.dataset.originalPrice || 0);
+
+      if (!isNaN(newPrice) && newPrice >= 0 && newPrice !== originalPrice) {
+        const oldPrice = product.precio || 0;
+        product.precio = newPrice;
+        input.dataset.originalPrice = newPrice.toString();
+
+        cambios.push({
+          producto: product.descripcion,
+          precioAnterior: oldPrice,
+          precioNuevo: newPrice,
+        });
+        cambiosGuardados++;
+      }
+    }
+  });
+
+  if (cambiosGuardados === 0) {
+    alert("No hay cambios pendientes para guardar");
+    return;
+  }
+
+  // Guardar en localStorage
+  localStorage.setItem("productsCatalog", JSON.stringify(productsCatalog));
+
+  // Remover marcas visuales de cambios
+  document.querySelectorAll(".producto-precio-row").forEach((row) => {
+    row.style.background = "";
+    row.style.borderColor = "";
+  });
+
+  const mensaje =
+    cambiosGuardados === 1
+      ? `✓ Se actualizó 1 precio:\n${
+          cambios[0].producto
+        }: $${cambios[0].precioAnterior.toLocaleString()} → $${cambios[0].precioNuevo.toLocaleString()}`
+      : `✓ Se actualizaron ${cambiosGuardados} precios correctamente`;
+
+  alert(mensaje);
+}
+
+function filtrarProductosPorPrecio() {
+  const searchTerm =
+    document.getElementById("buscarProductoPrecio")?.value.toLowerCase() || "";
+  const rows = document.querySelectorAll(".producto-precio-row");
+
+  rows.forEach((row) => {
+    const productText = row.textContent.toLowerCase();
+    row.style.display = productText.includes(searchTerm) ? "" : "none";
+  });
+}
 
 /* =========================
    DESCARGA (placeholder)

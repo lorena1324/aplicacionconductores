@@ -342,6 +342,16 @@ body {
   box-shadow: 0 8px 16px rgba(37, 99, 235, 0.3);
 }
 
+.summary-card.clickable {
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.summary-card.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 18px rgba(37, 99, 235, 0.35);
+}
+
 .summary-card h5 {
   margin: 0 0 10px 0;
   font-size: 14px;
@@ -455,6 +465,10 @@ body {
    COORDINADORA ONLY
 ========================= */
 .coordinator-only {
+  display: block;
+}
+
+.driver-only {
   display: block;
 }
 
@@ -911,7 +925,7 @@ body {
 
 .invoice-items-header {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 1fr 1fr;
   gap: 10px;
   padding: 10px;
   background: #1e293b;
@@ -924,7 +938,7 @@ body {
 
 .invoice-item-row {
   display: grid;
-  grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+  grid-template-columns: 2fr 0.8fr 1fr 1fr 1fr 1fr;
   gap: 10px;
   padding: 12px;
   background: #ffffff;
@@ -1220,4 +1234,66 @@ body {
 
 .btn-download-pdf-small:hover {
   background: #059669;
+}
+
+/* =========================
+   EDITAR PRECIOS
+========================= */
+.productos-precios-table {
+  width: 100%;
+  background: #ffffff;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.precio-input {
+  width: 100%;
+  padding: 8px;
+  border: 2px solid #cbd5e1;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #1e293b;
+  transition: border-color 0.2s ease;
+}
+
+.precio-input:focus {
+  outline: none;
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+}
+
+.precio-input:invalid {
+  border-color: #ef4444;
+}
+
+.producto-precio-row {
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.producto-precio-row:hover {
+  background: #f8fafc !important;
+}
+
+.btn-guardar-precio {
+  padding: 8px 16px;
+  background: #10b981;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  white-space: nowrap;
+}
+
+.btn-guardar-precio:hover {
+  background: #059669;
+}
+
+.productos-precios-table .table-header {
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
