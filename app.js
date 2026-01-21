@@ -9,6 +9,18 @@ const USERS = {
   conductor4: "4444",
 };
 
+const DRIVER_IDS = ["conductor1", "conductor2", "conductor3", "conductor4"];
+const DRIVER_LABELS = {
+  conductor1: "POP217",
+  conductor2: "POP237",
+  conductor3: "NXY793",
+  conductor4: "NXY794",
+};
+
+function getDriverLabel(driver) {
+  return DRIVER_LABELS[driver] || driver;
+}
+
 let currentUser = null;
 let currentRole = null;
 
@@ -128,6 +140,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   if (!productsCatalogLoaded) {
     await loadProductsCatalog();
     productsCatalogLoaded = true;
+    ensurePacaInventoryMigration();
   }
 });
 
@@ -146,6 +159,52 @@ function formatDate(dateStr) {
     month: "long",
     day: "numeric",
   });
+}
+
+function normalizeUnidad(unidad) {
+  return (unidad || "").toString().trim().toUpperCase();
+}
+
+function getUnitsPerPacaFromDescription(description) {
+  const match = (description || "").match(/X\s*(\d+)\s*UND/i);
+  return match ? parseInt(match[1], 10) : 1;
+}
+
+function formatQtyWithUnit(qty, unitLabel) {
+  return unitLabel ? `${qty} ${unitLabel}` : String(qty);
+}
+
+function ensurePacaInventoryMigration() {
+  const migrated = localStorage.getItem("pacaInventoryMigrated");
+  if (migrated === "true") return;
+  if (!inventory || Object.keys(inventory).length === 0) {
+    localStorage.setItem("pacaInventoryMigrated", "true");
+    return;
+  }
+  if (!productsCatalog || productsCatalog.length === 0) return;
+
+  Object.keys(inventory).forEach((date) => {
+    const dayInv = inventory[date] || {};
+    Object.keys(dayInv).forEach((driver) => {
+      const driverInv = dayInv[driver] || {};
+      Object.keys(driverInv).forEach((product) => {
+        const productInfo = productsCatalog.find(
+          (p) => p.descripcion === product
+        );
+        if (!productInfo) return;
+        if (normalizeUnidad(productInfo.unidad) !== "PACA") return;
+        const unitsPerPaca = getUnitsPerPacaFromDescription(
+          productInfo.descripcion || product
+        );
+        if (!unitsPerPaca || unitsPerPaca <= 1) return;
+        const currentQty = Number(driverInv[product] || 0);
+        driverInv[product] = currentQty * unitsPerPaca;
+      });
+    });
+  });
+
+  localStorage.setItem("pacaInventoryMigrated", "true");
+  saveData();
 }
 
 /* =========================
@@ -184,6 +243,7 @@ async function login() {
   if (productsCatalog.length === 0) {
     await loadProductsCatalog();
   }
+  ensurePacaInventoryMigration();
 
   // Configurar navegación según rol
   if (currentRole === "coordinadora") {
@@ -274,7 +334,7 @@ function setupDriverNavigation() {
 
   // Actualizar título del rol
   const roleTitle = document.getElementById("roleTitle");
-  const driverName = currentUser.replace("conductor", "Conductor ");
+  const driverName = getDriverLabel(currentUser);
   if (roleTitle) roleTitle.textContent = driverName;
 }
 
@@ -421,7 +481,7 @@ function renderDashboard() {
   }
 
   const date = today();
-  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  const drivers = DRIVER_IDS;
 
   // Calcular estadísticas
   let totalProducts = 0;
@@ -453,7 +513,7 @@ function renderDashboard() {
       allInvoices.push({
         ...inv,
         driver: driver,
-        driverName: driver.replace("conductor", "Conductor "),
+        driverName: getDriverLabel(driver),
       });
     });
   });
@@ -496,7 +556,7 @@ function renderDashboard() {
           ${drivers
             .map((driver) => {
               const driverInv = inventory[date]?.[driver] || {};
-              const driverName = driver.replace("conductor", "Conductor ");
+              const driverName = getDriverLabel(driver);
               const totalItems = Object.keys(driverInv).length;
               const totalQty = Object.values(driverInv).reduce(
                 (sum, qty) => sum + qty,
@@ -590,10 +650,10 @@ function renderInventario() {
           <div class="form-row">
             <label>Conductor:</label>
             <select id="invDriver" class="form-select">
-          <option value="conductor1">Conductor 1</option>
-          <option value="conductor2">Conductor 2</option>
-          <option value="conductor3">Conductor 3</option>
-          <option value="conductor4">Conductor 4</option>
+          <option value="conductor1">POP217</option>
+          <option value="conductor2">POP237</option>
+          <option value="conductor3">NXY793</option>
+          <option value="conductor4">NXY794</option>
         </select>
           </div>
           <div class="form-row">
@@ -630,10 +690,10 @@ function renderInventario() {
           <div class="quick-assign-section">
             <select id="quickAssignDriver" class="form-select" style="max-width: 250px; margin-bottom: 15px;">
               <option value="">Seleccionar conductor...</option>
-              <option value="conductor1">Conductor 1</option>
-              <option value="conductor2">Conductor 2</option>
-              <option value="conductor3">Conductor 3</option>
-              <option value="conductor4">Conductor 4</option>
+              <option value="conductor1">POP217</option>
+              <option value="conductor2">POP237</option>
+              <option value="conductor3">NXY793</option>
+              <option value="conductor4">NXY794</option>
             </select>
             <button onclick="openQuickAssignModal()" class="btn-primary">Crear Inventario del Día</button>
           </div>
@@ -695,6 +755,18 @@ function renderInventario() {
               (p) => p.descripcion === product
             );
             const precio = productInfo?.precio || 0;
+            const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+            const unitsPerPaca = isPaca
+              ? getUnitsPerPacaFromDescription(
+                  productInfo?.descripcion || product
+                )
+              : 1;
+            const unitPrice =
+              isPaca && unitsPerPaca > 0
+                ? Math.round((precio / unitsPerPaca) * 100) / 100
+                : precio;
+            const unitLabel = isPaca ? "UND" : productInfo?.unidad || "";
+            const assignedLabel = isPaca ? `${qty} ${unitLabel}` : qty;
 
             return `
             <div class="inventory-item-row" data-product="${product}" data-index="${index}">
@@ -703,15 +775,24 @@ function renderInventario() {
                 ${
                   productInfo
                     ? `<span class="product-meta">(${
-                        productInfo.unidad
-                      } - $${precio.toLocaleString()})</span>`
+                        isPaca
+                          ? `PACA ${unitsPerPaca} UND`
+                          : productInfo.unidad
+                      } - $${unitPrice.toLocaleString()}${
+                        isPaca ? " / UND" : ""
+                      })</span>`
                     : ""
                 }
               </span>
-              <span class="qty-assigned">${qty}</span>
+              <span class="qty-assigned">${assignedLabel}</span>
               <span class="qty-available" id="available-${index}">${qty}</span>
               <span class="action-buttons">
-                <button onclick="addToInvoice('${product}', ${index}, ${precio})" 
+                ${
+                  isPaca
+                    ? `<input id="paca-units-${index}" type="number" min="1" class="form-input" placeholder="Unidades" style="width: 110px;">`
+                    : ""
+                }
+                <button onclick="addToInvoice('${product}', ${index}, ${unitPrice})" 
                         class="btn-add-invoice" 
                         title="Agregar a factura">
                   ➕ Agregar
@@ -727,33 +808,33 @@ function renderInventario() {
         <h4>Datos del Cliente</h4>
         <div class="invoice-form">
           <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Dirección, Ciudad:</label>
+            <input id="direccionCiudadInvoice" placeholder="Dirección y ciudad del cliente" 
+                   class="form-input" style="flex: 1;">
+          </div>
+          
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">Barrio:</label>
+            <input id="barrioInvoice" placeholder="Barrio del cliente" 
+                   class="form-input" style="flex: 1;">
+          </div>
+          
+          <div class="form-row" style="margin-bottom: 15px;">
             <label style="min-width: 150px;">Nombre del Negocio:</label>
             <input id="businessNameInvoice" placeholder="Ingresa el nombre del negocio" 
                    class="form-input" style="flex: 1;" required>
           </div>
           
           <div class="form-row" style="margin-bottom: 15px;">
-            <label style="min-width: 150px;">Razón Social o NIT:</label>
-            <input id="razonSocialInvoice" placeholder="Razón social o NIT del cliente" 
-                   class="form-input" style="flex: 1;">
-          </div>
-          
-          <div class="form-row" style="margin-bottom: 15px;">
-            <label style="min-width: 150px;">Responsable:</label>
-            <input id="responsableInvoice" placeholder="Nombre del responsable" 
-                   class="form-input" style="flex: 1;">
-          </div>
-          
-          <div class="form-row" style="margin-bottom: 15px;">
-            <label style="min-width: 150px;">Cédula (CC):</label>
-            <input id="ccInvoice" placeholder="Número de cédula" 
-                   class="form-input" style="flex: 1;" type="text">
-          </div>
-          
-          <div class="form-row" style="margin-bottom: 15px;">
             <label style="min-width: 150px;">Teléfono:</label>
             <input id="telefonoInvoice" placeholder="Número de teléfono" 
                    class="form-input" style="flex: 1;" type="tel">
+          </div>
+
+          <div class="form-row" style="margin-bottom: 15px;">
+            <label style="min-width: 150px;">NIT:</label>
+            <input id="nitInvoice" placeholder="Número de NIT" 
+                   class="form-input" style="flex: 1;">
           </div>
 
           <div class="form-row" style="margin-bottom: 15px;">
@@ -816,12 +897,12 @@ function toggleInstallmentsInvoice() {
 
 function renderTodayInventorySummary() {
   const date = today();
-  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  const drivers = DRIVER_IDS;
   let summaryHTML = "";
 
   drivers.forEach((driver) => {
     const driverInv = inventory[date]?.[driver] || {};
-    const driverName = driver.replace("conductor", "Conductor ");
+    const driverName = getDriverLabel(driver);
     const totalItems = Object.keys(driverInv).length;
     const totalQty = Object.values(driverInv).reduce(
       (sum, qty) => sum + qty,
@@ -871,6 +952,7 @@ function assignInventory() {
   let product = "";
   let codigo = "";
   let precio = 0;
+  let unidad = "";
 
   if (productSelect.tagName === "SELECT") {
     // Es un select - validar que haya una opción seleccionada
@@ -891,6 +973,7 @@ function assignInventory() {
     // Obtener información adicional del producto
     codigo = selectedOption?.dataset?.codigo || "";
     precio = parseFloat(selectedOption?.dataset?.precio || 0);
+    unidad = selectedOption?.dataset?.unidad || "";
   } else if (productSelect.tagName === "INPUT") {
     // Es un input (versión antigua) - obtener el valor del input
     product = productSelect.value?.trim() || "";
@@ -898,6 +981,10 @@ function assignInventory() {
       alert("Por favor ingresa un producto");
       return;
     }
+    const productInfo = productsCatalog.find((p) => p.descripcion === product);
+    codigo = productInfo?.codigo || codigo;
+    precio = productInfo?.precio || precio;
+    unidad = productInfo?.unidad || unidad;
   } else {
     alert("Error: El elemento de producto no es válido");
     return;
@@ -913,8 +1000,12 @@ function assignInventory() {
   if (!inventory[date]) inventory[date] = {};
   if (!inventory[date][driver]) inventory[date][driver] = {};
 
+  const isPaca = normalizeUnidad(unidad) === "PACA";
+  const unitsPerPaca = isPaca ? getUnitsPerPacaFromDescription(product) : 1;
+  const assignedQty = isPaca ? qty * unitsPerPaca : qty;
+
   const previousQty = inventory[date][driver][product] || 0;
-  inventory[date][driver][product] = previousQty + qty;
+  inventory[date][driver][product] = previousQty + assignedQty;
 
   // Registrar movimiento
   movements.push({
@@ -924,19 +1015,23 @@ function assignInventory() {
     product: product,
     codigo: codigo,
     precio: precio,
-    quantity: qty,
+    quantity: assignedQty,
     previousQuantity: previousQty,
     newQuantity: inventory[date][driver][product],
     timestamp: new Date().toISOString(),
   });
 
   saveData();
-  alert(
-    `✓ ${qty} unidades de "${product}" asignadas a ${driver.replace(
-      "conductor",
-      "Conductor "
-    )}`
-  );
+  const assignedMessage = isPaca
+    ? `✓ ${qty} paca(s) (${assignedQty} UND) de "${product}" asignadas a ${driver.replace(
+        "conductor",
+        "Conductor "
+      )}`
+    : `✓ ${qty} unidades de "${product}" asignadas a ${driver.replace(
+        "conductor",
+        "Conductor "
+      )}`;
+  alert(assignedMessage);
 
   // Limpiar formulario
   if (productSelect.tagName === "SELECT") {
@@ -961,12 +1056,12 @@ function assignInventory() {
 ========================= */
 function renderGestionInventarioContent() {
   const date = today();
-  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  const drivers = DRIVER_IDS;
   let html = "";
 
   drivers.forEach((driver) => {
     const driverInv = inventory[date]?.[driver] || {};
-    const driverName = driver.replace("conductor", "Conductor ");
+    const driverName = getDriverLabel(driver);
 
     html += `
       <div class="driver-inventory-card" style="margin-bottom: 25px; padding: 20px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
@@ -1127,16 +1222,16 @@ function renderControlMovimientos() {
         <option value="">Todos los conductores</option>
         <option value="conductor1" ${
           currentDriver === "conductor1" ? "selected" : ""
-        }>Conductor 1</option>
+        }>POP217</option>
         <option value="conductor2" ${
           currentDriver === "conductor2" ? "selected" : ""
-        }>Conductor 2</option>
+        }>POP237</option>
         <option value="conductor3" ${
           currentDriver === "conductor3" ? "selected" : ""
-        }>Conductor 3</option>
+        }>NXY793</option>
         <option value="conductor4" ${
           currentDriver === "conductor4" ? "selected" : ""
-        }>Conductor 4</option>
+        }>NXY794</option>
       </select>
       <select id="filterDate" onchange="renderControlMovimientos()">
         <option value="">Todas las fechas</option>
@@ -1222,7 +1317,7 @@ function renderControlMovimientos() {
         hour: "2-digit",
         minute: "2-digit",
       });
-      const driverName = m.driver.replace("conductor", "Conductor ");
+      const driverName = getDriverLabel(m.driver);
       const typeLabels = {
         asignacion: "➕ Asignación",
         modificacion: "✏️ Modificación",
@@ -1284,7 +1379,7 @@ function renderHistorialVentas() {
     return;
   }
 
-  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  const drivers = DRIVER_IDS;
   let totalSales = 0;
   let totalInvoices = 0;
   let totalQty = 0;
@@ -1361,7 +1456,7 @@ function renderHistorialVentas() {
 }
 
 function renderSalesSummary() {
-  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  const drivers = DRIVER_IDS;
   let totalSales = 0;
   let totalInvoices = 0;
 
@@ -1398,12 +1493,12 @@ function renderSalesSummary() {
 }
 
 function renderSalesByDriver() {
-  const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+  const drivers = DRIVER_IDS;
 
   return drivers
     .map((driver, driverIndex) => {
       const driverInvoices = invoices[driver] || [];
-      const driverName = driver.replace("conductor", "Conductor ");
+      const driverName = getDriverLabel(driver);
       const driverTotal = driverInvoices.reduce(
         (sum, inv) => sum + (inv.total || 0),
         0
@@ -1514,7 +1609,7 @@ function renderFacturas() {
   if (currentRole === "coordinadora") {
     console.log("Renderizando facturas para COORDINADORA");
     // Mostrar todas las facturas de todos los conductores
-    const drivers = ["conductor1", "conductor2", "conductor3", "conductor4"];
+    const drivers = DRIVER_IDS;
     const allInvoices = [];
 
     drivers.forEach((driver) => {
@@ -1524,7 +1619,7 @@ function renderFacturas() {
         allInvoices.push({
           ...inv,
           driver: driver,
-          driverName: driver.replace("conductor", "Conductor "),
+          driverName: getDriverLabel(driver),
           originalIndex: index, // Guardar índice original para descarga
         });
       });
@@ -1683,15 +1778,32 @@ function addToInvoice(product, index, precio) {
   // Buscar el código del producto en el catálogo
   const productInfo = productsCatalog.find((p) => p.descripcion === product);
   const codigo = productInfo?.codigo || "";
+  const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+  const unitLabel = isPaca ? "UND" : productInfo?.unidad || "";
+
+  let qtyToAdd = 1;
+  if (isPaca) {
+    const unitsInput = document.getElementById(`paca-units-${index}`);
+    qtyToAdd = parseInt(unitsInput?.value, 10);
+    if (!qtyToAdd || qtyToAdd <= 0) {
+      alert("Ingresa la cantidad de unidades a agregar");
+      return;
+    }
+    if (qtyToAdd > availableQty) {
+      alert(`Solo quedan ${availableQty} unidades disponibles de ${product}`);
+      return;
+    }
+  }
 
   // Verificar si el producto ya está en la factura
   const existingItem = invoiceItems.find((item) => item.product === product);
 
   if (existingItem) {
-    // Si ya existe, aumentar la cantidad en 1
-    if (existingItem.qty < availableQty) {
-      existingItem.qty += 1;
+    // Si ya existe, aumentar la cantidad según la solicitud
+    if (qtyToAdd <= availableQty) {
+      existingItem.qty += qtyToAdd;
       existingItem.subtotal = existingItem.qty * existingItem.price;
+      existingItem.unitLabel = existingItem.unitLabel || unitLabel;
     } else {
       alert(`Ya has agregado todas las unidades disponibles de ${product}`);
       return;
@@ -1701,15 +1813,19 @@ function addToInvoice(product, index, precio) {
     invoiceItems.push({
       product: product,
       codigo: codigo,
-      qty: 1,
+      qty: qtyToAdd,
       price: precio || 0,
-      subtotal: precio || 0,
+      subtotal: (precio || 0) * qtyToAdd,
       index: index,
+      unitLabel: unitLabel,
     });
   }
 
   updateInvoiceDisplay();
   updateAvailableQuantities();
+
+  const unitsInput = document.getElementById(`paca-units-${index}`);
+  if (unitsInput) unitsInput.value = "";
 }
 
 function updateInvoiceDisplay() {
@@ -1751,7 +1867,10 @@ function updateInvoiceDisplay() {
           }</span>
           <span>
             <button onclick="decrementInvoiceQty(${idx})" class="qty-btn-small">-</button>
-            <span style="margin: 0 10px; font-weight: 600;">${item.qty}</span>
+            <span style="margin: 0 10px; font-weight: 600;">${formatQtyWithUnit(
+              item.qty,
+              item.unitLabel
+            )}</span>
             <button onclick="incrementInvoiceQty(${idx})" class="qty-btn-small">+</button>
           </span>
           <span>$${item.price.toLocaleString()}</span>
@@ -1842,13 +1961,13 @@ function finalizeInvoiceFromInventory() {
   const businessName = document
     .getElementById("businessNameInvoice")
     ?.value.trim();
-  const razonSocial =
-    document.getElementById("razonSocialInvoice")?.value.trim() || "";
-  const responsable =
-    document.getElementById("responsableInvoice")?.value.trim() || "";
-  const cc = document.getElementById("ccInvoice")?.value.trim() || "";
+  const direccionCiudad =
+    document.getElementById("direccionCiudadInvoice")?.value.trim() || "";
+  const barrio =
+    document.getElementById("barrioInvoice")?.value.trim() || "";
   const telefono =
     document.getElementById("telefonoInvoice")?.value.trim() || "";
+  const nit = document.getElementById("nitInvoice")?.value.trim() || "";
   const paymentMethod =
     document.getElementById("paymentMethodInvoice")?.value || "efectivo";
   const installmentsValue =
@@ -1883,6 +2002,7 @@ function finalizeInvoiceFromInventory() {
       qty: item.qty,
       price: item.price,
       subtotal: item.subtotal,
+      unitLabel: item.unitLabel || "",
     });
     total += item.subtotal;
 
@@ -1915,10 +2035,10 @@ function finalizeInvoiceFromInventory() {
   invoices[currentUser].push({
     date: date,
     negocio: businessName,
-    razonSocial: razonSocial,
-    responsable: responsable,
-    cc: cc,
+    direccionCiudad: direccionCiudad,
+    barrio: barrio,
     telefono: telefono,
+    nit: nit,
     paymentMethod: paymentMethod,
     installments: installments,
     items: saleItems,
@@ -1930,10 +2050,10 @@ function finalizeInvoiceFromInventory() {
   const invoice = {
     date: date,
     negocio: businessName,
-    razonSocial: razonSocial,
-    responsable: responsable,
-    cc: cc,
+    direccionCiudad: direccionCiudad,
+    barrio: barrio,
     telefono: telefono,
+    nit: nit,
     paymentMethod: paymentMethod,
     installments: installments,
     items: saleItems,
@@ -1953,10 +2073,10 @@ function finalizeInvoiceFromInventory() {
   // Limpiar formulario
   invoiceItems = [];
   document.getElementById("businessNameInvoice").value = "";
-  document.getElementById("razonSocialInvoice").value = "";
-  document.getElementById("responsableInvoice").value = "";
-  document.getElementById("ccInvoice").value = "";
+  document.getElementById("direccionCiudadInvoice").value = "";
+  document.getElementById("barrioInvoice").value = "";
   document.getElementById("telefonoInvoice").value = "";
+  document.getElementById("nitInvoice").value = "";
   document.getElementById("paymentMethodInvoice").value = "efectivo";
   document.getElementById("installmentsInvoice").value = "1";
   toggleInstallmentsInvoice();
@@ -2075,12 +2195,11 @@ function updateSaleTotal() {
 
 function finalizeSale() {
   const businessName = document.getElementById("businessName").value.trim();
-  const razonSocial =
-    document.getElementById("razonSocial")?.value.trim() || "";
-  const responsable =
-    document.getElementById("responsable")?.value.trim() || "";
-  const cc = document.getElementById("cc")?.value.trim() || "";
+  const direccionCiudad =
+    document.getElementById("direccionCiudad")?.value.trim() || "";
+  const barrio = document.getElementById("barrio")?.value.trim() || "";
   const telefono = document.getElementById("telefono")?.value.trim() || "";
+  const nit = document.getElementById("nit")?.value.trim() || "";
   const items = document.querySelectorAll(".sale-item");
 
   if (!businessName) {
@@ -2113,8 +2232,9 @@ function finalizeSale() {
         (p) => p.descripcion === product
       );
       const codigo = productInfo?.codigo || "";
+      const unitLabel = productInfo?.unidad || "";
 
-      saleItems.push({ product, codigo, qty, price, subtotal });
+      saleItems.push({ product, codigo, qty, price, subtotal, unitLabel });
       total += subtotal;
 
       // Reducir inventario
@@ -2146,10 +2266,10 @@ function finalizeSale() {
   const invoice = {
     date: date,
     negocio: businessName,
-    razonSocial: razonSocial,
-    responsable: responsable,
-    cc: cc,
+    direccionCiudad: direccionCiudad,
+    barrio: barrio,
     telefono: telefono,
+    nit: nit,
     items: saleItems,
     total: total,
     timestamp: new Date().toISOString(),
@@ -2166,10 +2286,10 @@ function finalizeSale() {
 
   // Limpiar formulario
   document.getElementById("businessName").value = "";
-  document.getElementById("razonSocial").value = "";
-  document.getElementById("responsable").value = "";
-  document.getElementById("cc").value = "";
+  document.getElementById("direccionCiudad").value = "";
+  document.getElementById("barrio").value = "";
   document.getElementById("telefono").value = "";
+  document.getElementById("nit").value = "";
   document.getElementById("saleList").innerHTML = "";
   document.getElementById("total").textContent = "0";
 
@@ -2224,7 +2344,7 @@ function generateInvoicePDF(invoice) {
   // Obtener el nombre del conductor (puede ser desde currentUser o desde la factura si es coordinadora)
   let driverName = "";
   if (currentUser && currentUser !== "coordinadora") {
-    driverName = currentUser.replace("conductor", "Conductor ");
+    driverName = getDriverLabel(currentUser);
   } else {
     // Si es coordinadora, intentar obtener el conductor desde el contexto
     // Por ahora, usar un valor genérico o buscar en los movimientos
@@ -2235,94 +2355,62 @@ function generateInvoicePDF(invoice) {
     ? invoices[currentUser].length
     : 1;
 
-  // Columna izquierda - Vendedor
+  // Tabla superior - Datos del cliente
+  const clientTableX = 20;
+  const clientTableY = yPos;
+  const clientTableW = 170;
+  const clientTableRowH = 8;
+  const clientRows = [
+    { label: "CLIENTE", value: invoice.negocio || "N/A" },
+    { label: "DIRECCIÓN, CIUDAD", value: invoice.direccionCiudad || "N/A" },
+    { label: "BARRIO", value: invoice.barrio || "N/A" },
+    { label: "NIT", value: invoice.nit || "N/A" },
+    { label: "TELÉFONO", value: invoice.telefono || "N/A" },
+    {
+      label: "MÉTODO DE PAGO",
+      value: invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo",
+    },
+    {
+      label: "CUOTAS",
+      value:
+        invoice.paymentMethod === "tarjeta" && invoice.installments
+          ? String(invoice.installments)
+          : "N/A",
+    },
+    { label: "FECHA", value: invoiceDate },
+  ];
+
+  doc.setDrawColor(...grayColor);
+  doc.setFillColor(241, 245, 249);
+  doc.rect(
+    clientTableX,
+    clientTableY,
+    clientTableW,
+    clientRows.length * clientTableRowH,
+    "F"
+  );
+  doc.rect(
+    clientTableX,
+    clientTableY,
+    clientTableW,
+    clientRows.length * clientTableRowH
+  );
+
+  doc.setFontSize(9);
+  clientRows.forEach((row, idx) => {
+    const rowY = clientTableY + clientTableRowH * idx + 5.5;
+    doc.setFont("helvetica", "bold");
+    doc.text(`${row.label}:`, clientTableX + 4, rowY);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(row.value || "N/A"), clientTableX + 55, rowY);
+  });
+
+  // Datos del vendedor al final del bloque superior
+  yPos = clientTableY + clientRows.length * clientTableRowH + 12;
   doc.setFont("helvetica", "bold");
   doc.text("VENDEDOR:", 20, yPos);
   doc.setFont("helvetica", "normal");
   doc.text(driverName, 20, yPos + 5);
-
-  // Columna derecha - Cliente y Fecha
-  doc.setFont("helvetica", "bold");
-  doc.text("CLIENTE:", 150, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(invoice.negocio || "N/A", 150, yPos + 5);
-
-  // Información adicional del cliente
-  let clientInfoYPos = yPos + 12;
-  if (invoice.razonSocial) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Razón Social/NIT:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.razonSocial, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.responsable) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Responsable:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.responsable, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.cc) {
-    doc.setFont("helvetica", "bold");
-    doc.text("CC:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.cc, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.telefono) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Teléfono:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.telefono, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.paymentMethod) {
-    const metodoLabel =
-      invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo";
-    doc.setFont("helvetica", "bold");
-    doc.text("Método de pago:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(metodoLabel, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.paymentMethod === "tarjeta" && invoice.installments) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Cuotas:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(String(invoice.installments), 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.paymentMethod) {
-    const metodoLabel =
-      invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo";
-    doc.setFont("helvetica", "bold");
-    doc.text("Método de pago:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(metodoLabel, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.paymentMethod === "tarjeta" && invoice.installments) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Cuotas:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(String(invoice.installments), 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  // Fecha de factura
-  const dateYPos = Math.max(clientInfoYPos, yPos + 35);
-  doc.setFont("helvetica", "bold");
-  doc.text("FECHA:", 150, dateYPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(invoiceDate, 150, dateYPos + 5);
   // Número de factura en la esquina superior derecha (negrilla)
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -2334,7 +2422,7 @@ function generateInvoicePDF(invoice) {
   doc.setTextColor(...textColor);
 
   // Ajustar yPos para la tabla de productos
-  yPos = Math.max(50 + 45, dateYPos + 25);
+  yPos = yPos + 20;
 
   // Línea separadora
   doc.setDrawColor(...grayColor);
@@ -2382,7 +2470,7 @@ function generateInvoicePDF(invoice) {
     }
 
     doc.text(productText, 45, yPos + 2);
-    doc.text(String(item.qty), 115, yPos + 2);
+    doc.text(formatQtyWithUnit(item.qty, item.unitLabel), 115, yPos + 2);
     doc.text(`$${item.price.toLocaleString()}`, 135, yPos + 2);
     doc.text(`$${item.subtotal.toLocaleString()}`, 165, yPos + 2, {
       align: "right",
@@ -2474,7 +2562,7 @@ function generateInventoryAssignmentPDF(driver, date, driverInv) {
   const pageHeight = doc.internal.pageSize.height || 297;
   const bottomMargin = 20;
 
-  const driverName = driver.replace("conductor", "Conductor ");
+  const driverName = getDriverLabel(driver);
 
   // Encabezado
   doc.setFillColor(...primaryColor);
@@ -2510,13 +2598,22 @@ function generateInventoryAssignmentPDF(driver, date, driverInv) {
     const qty = driverInv[product];
     const productInfo = productsCatalog.find((p) => p.descripcion === product);
     const precio = productInfo?.precio || 0;
+    const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+    const unitsPerPaca = isPaca
+      ? getUnitsPerPacaFromDescription(productInfo?.descripcion || product)
+      : 1;
+    const unitPrice =
+      isPaca && unitsPerPaca > 0
+        ? Math.round((precio / unitsPerPaca) * 100) / 100
+        : precio;
+    const unidadLabel = isPaca ? "UND" : productInfo?.unidad || "";
     return {
       codigo: productInfo?.codigo || "",
-      unidad: productInfo?.unidad || "",
+      unidad: unidadLabel,
       product,
       qty,
-      price: precio,
-      subtotal: qty * precio,
+      price: unitPrice,
+      subtotal: qty * unitPrice,
     };
   });
 
@@ -2656,7 +2753,7 @@ function generateInvoicePDFForDriver(invoice, driver) {
   doc.setTextColor(...textColor);
   doc.setFontSize(10);
 
-  const driverName = driver.replace("conductor", "Conductor ");
+  const driverName = getDriverLabel(driver);
   const invoiceDate = formatDate(invoice.date);
 
   // Obtener el número de factura del conductor
@@ -2669,58 +2766,62 @@ function generateInvoicePDFForDriver(invoice, driver) {
         inv.total === invoice.total
     ) + 1;
 
-  // Columna izquierda - Vendedor
+  // Tabla superior - Datos del cliente
+  const clientTableX = 20;
+  const clientTableY = yPos;
+  const clientTableW = 170;
+  const clientTableRowH = 8;
+  const clientRows = [
+    { label: "CLIENTE", value: invoice.negocio || "N/A" },
+    { label: "DIRECCIÓN, CIUDAD", value: invoice.direccionCiudad || "N/A" },
+    { label: "BARRIO", value: invoice.barrio || "N/A" },
+    { label: "NIT", value: invoice.nit || "N/A" },
+    { label: "TELÉFONO", value: invoice.telefono || "N/A" },
+    {
+      label: "MÉTODO DE PAGO",
+      value: invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo",
+    },
+    {
+      label: "CUOTAS",
+      value:
+        invoice.paymentMethod === "tarjeta" && invoice.installments
+          ? String(invoice.installments)
+          : "N/A",
+    },
+    { label: "FECHA", value: invoiceDate },
+  ];
+
+  doc.setDrawColor(...grayColor);
+  doc.setFillColor(241, 245, 249);
+  doc.rect(
+    clientTableX,
+    clientTableY,
+    clientTableW,
+    clientRows.length * clientTableRowH,
+    "F"
+  );
+  doc.rect(
+    clientTableX,
+    clientTableY,
+    clientTableW,
+    clientRows.length * clientTableRowH
+  );
+
+  doc.setFontSize(9);
+  clientRows.forEach((row, idx) => {
+    const rowY = clientTableY + clientTableRowH * idx + 5.5;
+    doc.setFont("helvetica", "bold");
+    doc.text(`${row.label}:`, clientTableX + 4, rowY);
+    doc.setFont("helvetica", "normal");
+    doc.text(String(row.value || "N/A"), clientTableX + 55, rowY);
+  });
+
+  // Datos del vendedor al final del bloque superior
+  yPos = clientTableY + clientRows.length * clientTableRowH + 12;
   doc.setFont("helvetica", "bold");
   doc.text("VENDEDOR:", 20, yPos);
   doc.setFont("helvetica", "normal");
   doc.text(driverName, 20, yPos + 5);
-
-  // Columna derecha - Cliente y Fecha
-  doc.setFont("helvetica", "bold");
-  doc.text("CLIENTE:", 150, yPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(invoice.negocio || "N/A", 150, yPos + 5);
-
-  // Información adicional del cliente
-  let clientInfoYPos = yPos + 12;
-  if (invoice.razonSocial) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Razón Social/NIT:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.razonSocial, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.responsable) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Responsable:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.responsable, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.cc) {
-    doc.setFont("helvetica", "bold");
-    doc.text("CC:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.cc, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  if (invoice.telefono) {
-    doc.setFont("helvetica", "bold");
-    doc.text("Teléfono:", 150, clientInfoYPos);
-    doc.setFont("helvetica", "normal");
-    doc.text(invoice.telefono, 150, clientInfoYPos + 5);
-    clientInfoYPos += 10;
-  }
-
-  // Fecha de factura
-  const dateYPos = Math.max(clientInfoYPos, yPos + 35);
-  doc.setFont("helvetica", "bold");
-  doc.text("FECHA:", 150, dateYPos);
-  doc.setFont("helvetica", "normal");
-  doc.text(invoiceDate, 150, dateYPos + 5);
   // Número de factura en la esquina superior derecha (negrilla)
   doc.setFontSize(12);
   doc.setFont("helvetica", "bold");
@@ -2732,7 +2833,7 @@ function generateInvoicePDFForDriver(invoice, driver) {
   doc.setTextColor(...textColor);
 
   // Ajustar yPos para la tabla de productos
-  yPos = Math.max(50 + 45, dateYPos + 25);
+  yPos = yPos + 20;
 
   // Línea separadora
   doc.setDrawColor(...grayColor);
@@ -2780,7 +2881,7 @@ function generateInvoicePDFForDriver(invoice, driver) {
     }
 
     doc.text(productText, 45, yPos + 2);
-    doc.text(String(item.qty), 115, yPos + 2);
+    doc.text(formatQtyWithUnit(item.qty, item.unitLabel), 115, yPos + 2);
     doc.text(`$${item.price.toLocaleString()}`, 135, yPos + 2);
     doc.text(`$${item.subtotal.toLocaleString()}`, 165, yPos + 2, {
       align: "right",
@@ -2892,7 +2993,7 @@ function openQuickAssignModal() {
   }
 
   const date = today();
-  const driverName = driver.replace("conductor", "Conductor ");
+  const driverName = getDriverLabel(driver);
 
   // Crear modal
   const modalHTML = `

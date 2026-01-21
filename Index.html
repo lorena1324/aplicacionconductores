@@ -16,10 +16,10 @@
       <select id="userSelect">
         <option value="">Seleccionar usuario</option>
         <option value="coordinadora">Coordinadora</option>
-        <option value="conductor1">Conductor 1</option>
-        <option value="conductor2">Conductor 2</option>
-        <option value="conductor3">Conductor 3</option>
-        <option value="conductor4">Conductor 4</option>
+        <option value="conductor1">POP217</option>
+        <option value="conductor2">POP237</option>
+        <option value="conductor3">NXY793</option>
+        <option value="conductor4">NXY794</option>
       </select>
 
       <input type="password" id="password" placeholder="Contraseña" />
@@ -85,6 +85,26 @@
             <h4 style="margin-bottom: 15px">Datos del Cliente</h4>
 
             <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Dirección, Ciudad:</label>
+              <input
+                id="direccionCiudad"
+                placeholder="Dirección y ciudad del cliente"
+                class="form-input"
+                style="flex: 1"
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">Barrio:</label>
+              <input
+                id="barrio"
+                placeholder="Barrio del cliente"
+                class="form-input"
+                style="flex: 1"
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
               <label style="min-width: 150px">Nombre del Negocio:</label>
               <input
                 id="businessName"
@@ -96,37 +116,6 @@
             </div>
 
             <div class="form-row" style="margin-bottom: 15px">
-              <label style="min-width: 150px">Razón Social o NIT:</label>
-              <input
-                id="razonSocial"
-                placeholder="Razón social o NIT del cliente"
-                class="form-input"
-                style="flex: 1"
-              />
-            </div>
-
-            <div class="form-row" style="margin-bottom: 15px">
-              <label style="min-width: 150px">Responsable:</label>
-              <input
-                id="responsable"
-                placeholder="Nombre del responsable"
-                class="form-input"
-                style="flex: 1"
-              />
-            </div>
-
-            <div class="form-row" style="margin-bottom: 15px">
-              <label style="min-width: 150px">Cédula (CC):</label>
-              <input
-                id="cc"
-                placeholder="Número de cédula"
-                class="form-input"
-                style="flex: 1"
-                type="text"
-              />
-            </div>
-
-            <div class="form-row" style="margin-bottom: 15px">
               <label style="min-width: 150px">Teléfono:</label>
               <input
                 id="telefono"
@@ -134,6 +123,16 @@
                 class="form-input"
                 style="flex: 1"
                 type="tel"
+              />
+            </div>
+
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">NIT:</label>
+              <input
+                id="nit"
+                placeholder="Número de NIT"
+                class="form-input"
+                style="flex: 1"
               />
             </div>
           </div>
