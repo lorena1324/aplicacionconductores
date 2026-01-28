@@ -114,9 +114,124 @@ window.inspectInvoices = function() {
   };
 };
 
-console.log("🔧 Herramienta de diagnóstico disponible.");
-console.log("   Ejecuta: inspectInvoices()");
-console.log("   Para ver todas las facturas y sus datos.");
+// 🔍 VERIFICAR CAMPOS DEL FORMULARIO EN TIEMPO REAL
+window.checkFormFields = function() {
+  console.log("🔍 ===== VERIFICACIÓN DE CAMPOS DEL FORMULARIO =====");
+  console.log("");
+  
+  // Campos del módulo de VENTAS
+  console.log("📝 MÓDULO DE VENTAS:");
+  const ventasFields = {
+    'direccionCiudad': document.getElementById('direccionCiudad'),
+    'barrio': document.getElementById('barrio'),
+    'businessName': document.getElementById('businessName'),
+    'telefono': document.getElementById('telefono'),
+    'nit': document.getElementById('nit')
+  };
+  
+  Object.keys(ventasFields).forEach(fieldId => {
+    const field = ventasFields[fieldId];
+    if (field) {
+      console.log(`   ✅ ${fieldId}:`);
+      console.log(`      - Existe: SÍ`);
+      console.log(`      - Visible: ${field.offsetParent !== null ? 'SÍ' : 'NO'}`);
+      console.log(`      - Valor: "${field.value}" ${field.value ? '✅' : '❌ VACÍO'}`);
+    } else {
+      console.log(`   ❌ ${fieldId}: NO EXISTE en el DOM`);
+    }
+  });
+  
+  console.log("");
+  
+  // Campos del módulo de INVENTARIO
+  console.log("📦 MÓDULO DE INVENTARIO:");
+  const inventarioFields = {
+    'direccionCiudadInvoice': document.getElementById('direccionCiudadInvoice'),
+    'barrioInvoice': document.getElementById('barrioInvoice'),
+    'businessNameInvoice': document.getElementById('businessNameInvoice'),
+    'telefonoInvoice': document.getElementById('telefonoInvoice'),
+    'nitInvoice': document.getElementById('nitInvoice')
+  };
+  
+  Object.keys(inventarioFields).forEach(fieldId => {
+    const field = inventarioFields[fieldId];
+    if (field) {
+      console.log(`   ✅ ${fieldId}:`);
+      console.log(`      - Existe: SÍ`);
+      console.log(`      - Visible: ${field.offsetParent !== null ? 'SÍ' : 'NO'}`);
+      console.log(`      - Valor: "${field.value}" ${field.value ? '✅' : '❌ VACÍO'}`);
+    } else {
+      console.log(`   ❌ ${fieldId}: NO EXISTE en el DOM`);
+    }
+  });
+  
+  console.log("");
+  console.log("💡 TIP: Llena los campos y ejecuta este comando nuevamente para verificar que se están capturando.");
+  console.log("");
+};
+
+// 🧪 TEST COMPLETO: Crear factura de prueba
+window.testCreateInvoice = function() {
+  console.log("🧪 ===== TEST DE CREACIÓN DE FACTURA =====");
+  console.log("");
+  console.log("Este test simulará llenar los campos y te dirá exactamente qué pasaría.");
+  console.log("");
+  
+  // Detectar qué módulo está visible
+  const ventasVisible = document.getElementById('ventas')?.classList.contains('hidden') === false;
+  const inventarioVisible = document.getElementById('inventario')?.classList.contains('hidden') === false;
+  
+  if (!ventasVisible && !inventarioVisible) {
+    console.warn("⚠️ Ningún módulo está visible. Ve a 'Ventas' o 'Inventario' primero.");
+    return;
+  }
+  
+  if (ventasVisible) {
+    console.log("📝 Módulo activo: VENTAS");
+    console.log("");
+    console.log("Para crear una factura de prueba:");
+    console.log("1. Llena TODOS estos campos:");
+    console.log("   • Dirección, Ciudad: Calle 100 #50-20, Bogotá");
+    console.log("   • Barrio: Chapinero");
+    console.log("   • Nombre del Negocio: TEST FACTURA");
+    console.log("   • Teléfono: 3001234567");
+    console.log("   • NIT: 900123456");
+    console.log("2. Agrega un producto");
+    console.log("3. ANTES de hacer clic en 'Generar factura', ejecuta:");
+    console.log("   checkFormFields()");
+    console.log("4. Verifica que todos los campos tengan valores ✅");
+    console.log("5. LUEGO haz clic en 'Generar factura'");
+  }
+  
+  if (inventarioVisible) {
+    console.log("📦 Módulo activo: INVENTARIO");
+    console.log("");
+    console.log("Para crear una factura de prueba:");
+    console.log("1. Agrega productos a la factura");
+    console.log("2. Llena TODOS estos campos:");
+    console.log("   • Dirección, Ciudad: Calle 100 #50-20, Bogotá");
+    console.log("   • Barrio: Chapinero");
+    console.log("   • Nombre del Negocio: TEST FACTURA");
+    console.log("   • Teléfono: 3001234567");
+    console.log("   • NIT: 900123456");
+    console.log("3. ANTES de hacer clic en 'Generar Factura', ejecuta:");
+    console.log("   checkFormFields()");
+    console.log("4. Verifica que todos los campos tengan valores ✅");
+    console.log("5. LUEGO haz clic en 'Generar Factura'");
+  }
+  
+  console.log("");
+  console.log("📊 Después de generar la factura, ejecuta:");
+  console.log("   inspectInvoices()");
+  console.log("   Para verificar que se guardó con los datos correctos.");
+  console.log("");
+};
+
+console.log("🔧 Herramientas de diagnóstico disponibles:");
+console.log("   • inspectInvoices() - Ver todas las facturas guardadas");
+console.log("   • checkFormFields() - Verificar campos del formulario");
+console.log("   • testCreateInvoice() - Guía paso a paso para crear factura de prueba");
+console.log("");
 
 function saveData() {
   lastSyncTimestamp = Date.now();
@@ -1804,12 +1919,15 @@ function renderFacturas() {
     return;
   }
 
+  // Invertir para mostrar más recientes primero (NO modifica el array original)
+  const reversedList = [...list].reverse();
+  
   cont.innerHTML = `
     <div class="invoices-list-header" style="margin-bottom: 15px;">
       <h4>Mis Facturas</h4>
       <p style="color: #64748b; font-size: 14px;">Total: ${
         list.length
-      } factura(s)</p>
+      } factura(s) | 🔄 Más recientes primero</p>
     </div>
     <div class="invoices-table-list">
       <div class="table-header" style="grid-template-columns: 2fr 1fr 1fr 1fr;">
@@ -1818,11 +1936,8 @@ function renderFacturas() {
         <span>Total</span>
         <span>Acción</span>
       </div>
-      ${list
-        .reverse()
+      ${reversedList
         .map((f, i) => {
-          // Guardar referencia de la factura original
-          const originalIndex = list.length - 1 - i;
           return `
           <div class="table-row">
             <span>${formatDate(f.date)}</span>
@@ -1840,8 +1955,8 @@ function renderFacturas() {
     </div>
   `;
 
-  // Guardar referencia a las facturas para descarga
-  window.invoiceListForDownload = list;
+  // Guardar referencia a las facturas INVERTIDAS para descarga
+  window.invoiceListForDownload = reversedList;
 }
 
 /* =========================
@@ -3427,7 +3542,7 @@ function downloadXlsxFile(rows, fileName) {
 function getCoordinatorInvoiceByIndex(driver, index) {
   console.log("🔍 Buscando factura:");
   console.log("   - Driver:", driver);
-  console.log("   - Index solicitado:", index);
+  console.log("   - Index solicitado (originalIndex desde HTML):", index);
   
   const driverInvoices = invoices[driver] || [];
   console.log("   - Total facturas del conductor:", driverInvoices.length);
@@ -3437,19 +3552,22 @@ function getCoordinatorInvoiceByIndex(driver, index) {
     return null;
   }
   
-  const reversedIndex = driverInvoices.length - 1 - index;
-  console.log("   - Index invertido (más reciente primero):", reversedIndex);
-  
-  const invoice = driverInvoices[reversedIndex] || null;
+  // CORRECCIÓN: El index que llega YA es el originalIndex del array
+  // NO necesitamos convertirlo porque ya apunta al índice correcto
+  const invoice = driverInvoices[index] || null;
   
   if (invoice) {
-    console.log("✅ Factura encontrada:");
+    console.log("✅ Factura encontrada en index:", index);
+    console.log("   - Negocio:", invoice.negocio);
+    console.log("   - Fecha:", invoice.date);
+    console.log("   - Total:", invoice.total);
     console.log("   - Tiene direccionCiudad:", !!invoice.direccionCiudad, "→", invoice.direccionCiudad || "(vacío)");
     console.log("   - Tiene barrio:", !!invoice.barrio, "→", invoice.barrio || "(vacío)");
     console.log("   - Tiene telefono:", !!invoice.telefono, "→", invoice.telefono || "(vacío)");
     console.log("   - Tiene nit:", !!invoice.nit, "→", invoice.nit || "(vacío)");
   } else {
-    console.error("❌ Factura no encontrada en el index:", reversedIndex);
+    console.error("❌ Factura no encontrada en el index:", index);
+    console.error("   Índice válido es de 0 a", driverInvoices.length - 1);
   }
   
   return invoice;
@@ -3557,7 +3675,25 @@ function exportInvoiceToExcelForCoordinator(driver, index) {
 function downloadInvoicePDFForCoordinator(driver, index) {
   console.log("👩‍💼 ===== COORDINADORA DESCARGANDO PDF =====");
   console.log("📍 Driver:", driver);
-  console.log("📍 Index:", index);
+  console.log("📍 Index recibido desde el botón:", index);
+  
+  // DIAGNÓSTICO: Mostrar TODAS las facturas de este conductor
+  const allDriverInvoices = invoices[driver] || [];
+  console.log("📊 TODAS las facturas del conductor (orden original):");
+  allDriverInvoices.forEach((inv, idx) => {
+    console.log(`   [${idx}] ${inv.date} | ${inv.negocio} | $${inv.total} | Items: ${inv.items?.length || 0}`);
+  });
+  
+  console.log("");
+  console.log("📊 Facturas en orden INVERTIDO (como se muestran en pantalla):");
+  const reversedForDisplay = [...allDriverInvoices].reverse();
+  reversedForDisplay.forEach((inv, idx) => {
+    console.log(`   [${idx}] ${inv.date} | ${inv.negocio} | $${inv.total} | Items: ${inv.items?.length || 0} ${idx === index ? '← ESTE DEBERÍA SER' : ''}`);
+  });
+  
+  console.log("");
+  console.log("🎯 Index solicitado:", index);
+  console.log("   Esto corresponde a la factura en posición", index, "del array INVERTIDO");
   
   // Obtener las facturas del conductor
   const invoice = getCoordinatorInvoiceByIndex(driver, index);
@@ -3568,18 +3704,19 @@ function downloadInvoicePDFForCoordinator(driver, index) {
     return;
   }
 
-  console.log("✅ Factura encontrada del conductor:", driver);
-  console.log("📦 Datos de la factura guardada:");
+  console.log("");
+  console.log("✅ Factura OBTENIDA:");
   console.log("   - Negocio:", invoice.negocio || "(sin datos)");
   console.log("   - Dirección:", invoice.direccionCiudad || "(sin datos) ⚠️");
   console.log("   - Barrio:", invoice.barrio || "(sin datos) ⚠️");
   console.log("   - Teléfono:", invoice.telefono || "(sin datos) ⚠️");
   console.log("   - NIT:", invoice.nit || "(sin datos) ⚠️");
   console.log("   - Fecha:", invoice.date || "(sin datos)");
-  console.log("   - Total:", invoice.total || 0);
+  console.log("   - Total:", invoice.total || 0, "← VERIFICAR QUE COINCIDA CON LA PANTALLA");
   console.log("   - Items:", invoice.items?.length || 0);
   
   if (!invoice.direccionCiudad && !invoice.barrio && !invoice.telefono && !invoice.nit) {
+    console.warn("");
     console.warn("⚠️⚠️⚠️ PROBLEMA IDENTIFICADO ⚠️⚠️⚠️");
     console.warn("Esta factura NO tiene datos del cliente guardados.");
     console.warn("Causa probable: El conductor NO llenó estos campos cuando generó la factura.");
@@ -3590,6 +3727,7 @@ function downloadInvoicePDFForCoordinator(driver, index) {
   const originalUser = currentUser;
   currentUser = driver;
 
+  console.log("");
   console.log("🔄 Cambiando usuario temporal de", originalUser, "a", driver);
   console.log("🖨️ Generando PDF...");
 
