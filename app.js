@@ -54,12 +54,86 @@ function loadData() {
   if (savedTimestamp) lastSyncTimestamp = parseInt(savedTimestamp);
 }
 
+// 🔍 HERRAMIENTA DE DIAGNÓSTICO - Disponible en consola
+window.inspectInvoices = function() {
+  console.log("🔍 ===== INSPECCIÓN DE FACTURAS =====");
+  console.log("");
+  
+  let totalInvoices = 0;
+  let invoicesWithClientData = 0;
+  let invoicesWithoutClientData = 0;
+  
+  Object.keys(invoices).forEach(driver => {
+    const driverInvoices = invoices[driver];
+    console.log(`👤 ${getDriverLabel(driver)} (${driver})`);
+    console.log(`   Total de facturas: ${driverInvoices.length}`);
+    console.log("");
+    
+    driverInvoices.forEach((inv, index) => {
+      totalInvoices++;
+      const hasClientData = !!(inv.direccionCiudad || inv.barrio || inv.telefono || inv.nit);
+      
+      if (hasClientData) {
+        invoicesWithClientData++;
+      } else {
+        invoicesWithoutClientData++;
+      }
+      
+      console.log(`   📋 Factura #${index + 1}:`);
+      console.log(`      - Negocio: ${inv.negocio || "N/A"}`);
+      console.log(`      - Fecha: ${inv.date || "N/A"}`);
+      console.log(`      - Total: $${(inv.total || 0).toLocaleString()}`);
+      console.log(`      - Datos del cliente: ${hasClientData ? "✅ SÍ tiene" : "❌ NO tiene"}`);
+      
+      if (hasClientData) {
+        console.log(`        • Dirección: ${inv.direccionCiudad || "N/A"}`);
+        console.log(`        • Barrio: ${inv.barrio || "N/A"}`);
+        console.log(`        • Teléfono: ${inv.telefono || "N/A"}`);
+        console.log(`        • NIT: ${inv.nit || "N/A"}`);
+      }
+      console.log("");
+    });
+  });
+  
+  console.log("📊 RESUMEN:");
+  console.log(`   Total de facturas: ${totalInvoices}`);
+  console.log(`   ✅ Con datos del cliente: ${invoicesWithClientData}`);
+  console.log(`   ❌ Sin datos del cliente: ${invoicesWithoutClientData}`);
+  console.log("");
+  
+  if (invoicesWithoutClientData > 0) {
+    console.warn("⚠️ Hay facturas sin datos del cliente.");
+    console.warn("   Estas facturas mostrarán 'N/A' en el PDF.");
+    console.warn("   No se pueden corregir retroactivamente.");
+  }
+  
+  return {
+    total: totalInvoices,
+    withClientData: invoicesWithClientData,
+    withoutClientData: invoicesWithoutClientData
+  };
+};
+
+console.log("🔧 Herramienta de diagnóstico disponible.");
+console.log("   Ejecuta: inspectInvoices()");
+console.log("   Para ver todas las facturas y sus datos.");
+
 function saveData() {
   lastSyncTimestamp = Date.now();
+  
+  // Log detallado antes de guardar
+  console.log("💾 Guardando datos en localStorage...");
+  console.log("   - Conductores con facturas:", Object.keys(invoices));
+  Object.keys(invoices).forEach(driver => {
+    console.log(`   - ${driver}: ${invoices[driver].length} facturas`);
+  });
+  
   localStorage.setItem("inventory", JSON.stringify(inventory));
   localStorage.setItem("invoices", JSON.stringify(invoices));
   localStorage.setItem("movements", JSON.stringify(movements));
   localStorage.setItem("lastSyncTimestamp", lastSyncTimestamp.toString());
+  
+  console.log("✅ Datos guardados en localStorage");
 
   // Disparar evento personalizado para sincronización entre pestañas
   window.dispatchEvent(
@@ -767,6 +841,13 @@ function renderInventario() {
                 : precio;
             const unitLabel = isPaca ? "UND" : productInfo?.unidad || "";
             const assignedLabel = isPaca ? `${qty} ${unitLabel}` : qty;
+            
+            // Calcular si hay pacas completas disponibles
+            let hasCompletePacas = false;
+            if (isPaca && unitsPerPaca > 0) {
+              const completePacas = Math.floor(qty / unitsPerPaca);
+              hasCompletePacas = completePacas > 0;
+            }
 
             return `
             <div class="inventory-item-row" data-product="${product}" data-index="${index}">
@@ -788,8 +869,8 @@ function renderInventario() {
               <span class="qty-available" id="available-${index}">${qty}</span>
               <span class="action-buttons">
                 ${
-                  isPaca
-                    ? `<input id="paca-units-${index}" type="number" min="1" class="form-input" placeholder="Unidades" style="width: 110px;">`
+                  isPaca && hasCompletePacas
+                    ? `<input id="paca-units-${index}" type="number" min="1" class="form-input" placeholder="Unidades (opcional)" style="width: 130px;" title="Dejar vacío para agregar una paca completa">`
                     : ""
                 }
                 <button onclick="addToInvoice('${product}', ${index}, ${unitPrice})" 
@@ -1679,13 +1760,20 @@ function renderFacturas() {
               <span style="font-weight: 600; color: #10b981;">$${(
                 f.total || 0
               ).toLocaleString()}</span>
-              <span>
+              <span style="display: flex; gap: 8px; flex-wrap: wrap;">
                 <button onclick="downloadInvoicePDFForCoordinator('${
                   f.driver
                 }', ${originalIndex})" 
                         class="btn-download-pdf" 
                         title="Descargar PDF">
-                  📄 Descargar PDF
+                  📄 PDF
+                </button>
+                <button onclick="exportInvoiceToExcelForCoordinator('${
+                  f.driver
+                }', ${originalIndex})" 
+                        class="btn-download-pdf" 
+                        title="Descargar Excel">
+                  📊 Excel
                 </button>
               </span>
             </div>
@@ -1782,28 +1870,84 @@ function addToInvoice(product, index, precio) {
   const unitLabel = isPaca ? "UND" : productInfo?.unidad || "";
 
   let qtyToAdd = 1;
+  let displayQty = 1;
+  let displayUnitLabel = unitLabel;
+  let displayPrice = precio || 0;
+  let unitsToDeduct = 1; // Cantidad en unidades para descontar del inventario
+  
   if (isPaca) {
+    const unitsPerPaca = getUnitsPerPacaFromDescription(
+      productInfo?.descripcion || product
+    );
+    
+    // Calcular pacas completas disponibles
+    const completePacas = Math.floor(availableQty / unitsPerPaca);
+    
     const unitsInput = document.getElementById(`paca-units-${index}`);
-    qtyToAdd = parseInt(unitsInput?.value, 10);
-    if (!qtyToAdd || qtyToAdd <= 0) {
-      alert("Ingresa la cantidad de unidades a agregar");
-      return;
+    const inputValue = unitsInput?.value?.trim();
+    
+    if (!inputValue || inputValue === "") {
+      // Si el input está vacío, agregar una paca completa
+      if (completePacas > 0) {
+        unitsToDeduct = unitsPerPaca;
+        displayQty = 1; // 1 paca
+        displayUnitLabel = "PACA";
+        displayPrice = productInfo?.precio || precio || 0; // Precio por paca
+      } else {
+        alert(`No hay pacas completas disponibles. Solo quedan ${availableQty} unidades sueltas.`);
+        return;
+      }
+    } else {
+      // Si hay un valor en el input, validar unidades sueltas
+      qtyToAdd = parseInt(inputValue, 10);
+      if (!qtyToAdd || qtyToAdd <= 0) {
+        alert("Ingresa una cantidad válida de unidades");
+        return;
+      }
+      
+      // Validar que no exceda la cantidad disponible
+      if (qtyToAdd > availableQty) {
+        alert(`Solo quedan ${availableQty} unidades disponibles de ${product}`);
+        return;
+      }
+      
+      // Priorizar evacuar pacas completas primero
+      // Solo permitir unidades sueltas si ya no hay pacas completas disponibles
+      if (completePacas > 0 && qtyToAdd < unitsPerPaca) {
+        alert(`Debes evacuar las pacas completas primero. Hay ${completePacas} paca(s) completa(s) disponible(s). Deja el campo vacío para agregar una paca completa.`);
+        return;
+      }
+      
+      // Unidades sueltas
+      unitsToDeduct = qtyToAdd;
+      displayQty = qtyToAdd;
+      displayUnitLabel = "UND";
+      displayPrice = precio || 0; // Precio por unidad
     }
-    if (qtyToAdd > availableQty) {
-      alert(`Solo quedan ${availableQty} unidades disponibles de ${product}`);
-      return;
-    }
+  } else {
+    unitsToDeduct = qtyToAdd;
   }
 
   // Verificar si el producto ya está en la factura
-  const existingItem = invoiceItems.find((item) => item.product === product);
+  // Para pacas, buscar items que coincidan en tipo (PACA o UND)
+  const existingItem = invoiceItems.find((item) => {
+    if (item.product === product) {
+      if (isPaca) {
+        // Para pacas, solo combinar si tienen el mismo unitLabel
+        return item.unitLabel === displayUnitLabel;
+      }
+      return true;
+    }
+    return false;
+  });
 
   if (existingItem) {
     // Si ya existe, aumentar la cantidad según la solicitud
-    if (qtyToAdd <= availableQty) {
-      existingItem.qty += qtyToAdd;
+    if (unitsToDeduct <= availableQty) {
+      existingItem.qty += displayQty;
+      existingItem.unitsToDeduct = (existingItem.unitsToDeduct || 0) + unitsToDeduct;
       existingItem.subtotal = existingItem.qty * existingItem.price;
-      existingItem.unitLabel = existingItem.unitLabel || unitLabel;
+      // Mantener el unitLabel existente (no cambiar de PACA a UND o viceversa)
     } else {
       alert(`Ya has agregado todas las unidades disponibles de ${product}`);
       return;
@@ -1813,11 +1957,12 @@ function addToInvoice(product, index, precio) {
     invoiceItems.push({
       product: product,
       codigo: codigo,
-      qty: qtyToAdd,
-      price: precio || 0,
-      subtotal: (precio || 0) * qtyToAdd,
+      qty: displayQty,
+      price: displayPrice,
+      subtotal: displayPrice * displayQty,
       index: index,
-      unitLabel: unitLabel,
+      unitLabel: displayUnitLabel,
+      unitsToDeduct: unitsToDeduct, // Guardar unidades reales para descontar del inventario
     });
   }
 
@@ -1896,20 +2041,75 @@ function incrementInvoiceQty(index) {
   const myInv = inventory[date]?.[currentUser] || {};
   const originalQty = myInv[item.product] || 0;
 
-  // Calcular cantidad disponible (original - cantidad ya en factura)
-  const otherItemsQty = invoiceItems
+  // Calcular cantidad disponible en unidades (original - cantidad ya en factura)
+  const otherItemsUnits = invoiceItems
     .filter((it, idx) => idx !== index && it.product === item.product)
-    .reduce((sum, it) => sum + it.qty, 0);
+    .reduce((sum, it) => {
+      const productInfo = productsCatalog.find((p) => p.descripcion === it.product);
+      const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+      if (isPaca && it.unitLabel === "PACA") {
+        const unitsPerPaca = getUnitsPerPacaFromDescription(
+          productInfo?.descripcion || it.product
+        );
+        return sum + (it.qty * unitsPerPaca);
+      }
+      return sum + (it.unitsToDeduct || it.qty);
+    }, 0);
 
-  const availableQty = originalQty - otherItemsQty;
+  const availableQty = originalQty - otherItemsUnits;
 
-  if (item.qty < availableQty) {
-    item.qty += 1;
-    item.subtotal = item.qty * item.price;
-    updateInvoiceDisplay();
-    updateAvailableQuantities();
+  // Verificar si es una paca
+  const productInfo = productsCatalog.find((p) => p.descripcion === item.product);
+  const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+  
+  if (isPaca && item.unitLabel === "PACA") {
+    // Es una paca completa
+    const unitsPerPaca = getUnitsPerPacaFromDescription(
+      productInfo?.descripcion || item.product
+    );
+    const completePacas = Math.floor(availableQty / unitsPerPaca);
+    
+    // Calcular unidades ya usadas por este item
+    const currentItemUnits = item.qty * unitsPerPaca;
+    const remainingAfterThis = availableQty - currentItemUnits;
+    
+    if (remainingAfterThis >= unitsPerPaca) {
+      item.qty += 1; // Incrementar una paca
+      item.unitsToDeduct = item.qty * unitsPerPaca;
+      item.subtotal = item.qty * item.price;
+      updateInvoiceDisplay();
+      updateAvailableQuantities();
+    } else {
+      alert(`No hay más pacas completas disponibles. Solo quedan ${remainingAfterThis} unidades sueltas.`);
+    }
+  } else if (isPaca && item.unitLabel === "UND") {
+    // Son unidades sueltas
+    const currentItemUnits = item.unitsToDeduct || item.qty;
+    const remainingAfterThis = availableQty - currentItemUnits;
+    
+    if (remainingAfterThis > 0) {
+      item.qty += 1;
+      item.unitsToDeduct = item.qty;
+      item.subtotal = item.qty * item.price;
+      updateInvoiceDisplay();
+      updateAvailableQuantities();
+    } else {
+      alert(`No hay más unidades disponibles de ${item.product}`);
+    }
   } else {
-    alert(`No hay más unidades disponibles de ${item.product}`);
+    // Producto normal, incrementar de a 1
+    const currentItemUnits = item.unitsToDeduct || item.qty;
+    const remainingAfterThis = availableQty - currentItemUnits;
+    
+    if (remainingAfterThis > 0) {
+      item.qty += 1;
+      item.unitsToDeduct = item.qty;
+      item.subtotal = item.qty * item.price;
+      updateInvoiceDisplay();
+      updateAvailableQuantities();
+    } else {
+      alert(`No hay más unidades disponibles de ${item.product}`);
+    }
   }
 }
 
@@ -1919,6 +2119,19 @@ function decrementInvoiceQty(index) {
   const item = invoiceItems[index];
   if (item.qty > 1) {
     item.qty -= 1;
+    
+    // Actualizar unitsToDeduct si es necesario
+    const productInfo = productsCatalog.find((p) => p.descripcion === item.product);
+    const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+    if (isPaca && item.unitLabel === "PACA") {
+      const unitsPerPaca = getUnitsPerPacaFromDescription(
+        productInfo?.descripcion || item.product
+      );
+      item.unitsToDeduct = item.qty * unitsPerPaca;
+    } else if (item.unitsToDeduct !== undefined) {
+      item.unitsToDeduct = item.qty;
+    }
+    
     item.subtotal = item.qty * item.price;
     updateInvoiceDisplay();
     updateAvailableQuantities();
@@ -1938,10 +2151,25 @@ function updateAvailableQuantities() {
   const date = today();
   const myInv = inventory[date]?.[currentUser] || {};
 
-  // Calcular cantidades ya agregadas a la factura por producto
+  // Calcular cantidades ya agregadas a la factura por producto (en unidades)
   const usedQty = {};
   invoiceItems.forEach((item) => {
-    usedQty[item.product] = (usedQty[item.product] || 0) + item.qty;
+    const productInfo = productsCatalog.find((p) => p.descripcion === item.product);
+    const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+    
+    let unitsUsed = item.qty;
+    if (isPaca && item.unitLabel === "PACA") {
+      // Si es una paca, convertir a unidades
+      const unitsPerPaca = getUnitsPerPacaFromDescription(
+        productInfo?.descripcion || item.product
+      );
+      unitsUsed = item.qty * unitsPerPaca;
+    } else if (item.unitsToDeduct !== undefined) {
+      // Usar las unidades reales guardadas
+      unitsUsed = item.unitsToDeduct;
+    }
+    
+    usedQty[item.product] = (usedQty[item.product] || 0) + unitsUsed;
   });
 
   // Actualizar visualización de cantidades disponibles
@@ -1953,34 +2181,79 @@ function updateAvailableQuantities() {
       availableEl.textContent = available;
       availableEl.style.color = available > 0 ? "#10b981" : "#ef4444";
       availableEl.style.fontWeight = "600";
+      
+      // Actualizar visibilidad del input de unidades para pacas
+      const productInfo = productsCatalog.find((p) => p.descripcion === product);
+      const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+      if (isPaca) {
+        const unitsPerPaca = getUnitsPerPacaFromDescription(
+          productInfo?.descripcion || product
+        );
+        const completePacas = Math.floor(available / unitsPerPaca);
+        const unitsInput = document.getElementById(`paca-units-${index}`);
+        if (unitsInput) {
+          if (completePacas > 0) {
+            unitsInput.style.display = "";
+            unitsInput.placeholder = "Unidades (opcional)";
+          } else {
+            unitsInput.style.display = "none";
+          }
+        }
+      }
     }
   });
 }
 
 function finalizeInvoiceFromInventory() {
-  const businessName = document
-    .getElementById("businessNameInvoice")
-    ?.value.trim();
-  const direccionCiudad =
-    document.getElementById("direccionCiudadInvoice")?.value.trim() || "";
-  const barrio =
-    document.getElementById("barrioInvoice")?.value.trim() || "";
-  const telefono =
-    document.getElementById("telefonoInvoice")?.value.trim() || "";
-  const nit = document.getElementById("nitInvoice")?.value.trim() || "";
+  console.log("🧾 ===== INICIANDO FINALIZAR FACTURA (Módulo INVENTARIO) =====");
+  
+  // Capturar nombre del negocio
+  const businessNameEl = document.getElementById("businessNameInvoice");
+  console.log("📍 Campo businessNameInvoice existe:", !!businessNameEl);
+  const businessName = businessNameEl?.value.trim();
+  console.log("   Valor:", businessName || "(vacío)");
+  
+  // Capturar datos del cliente
+  const direccionCiudadEl = document.getElementById("direccionCiudadInvoice");
+  const barrioEl = document.getElementById("barrioInvoice");
+  const telefonoEl = document.getElementById("telefonoInvoice");
+  const nitEl = document.getElementById("nitInvoice");
+  
+  console.log("📍 Verificando campos del cliente:");
+  console.log("   - direccionCiudadInvoice existe:", !!direccionCiudadEl);
+  console.log("   - barrioInvoice existe:", !!barrioEl);
+  console.log("   - telefonoInvoice existe:", !!telefonoEl);
+  console.log("   - nitInvoice existe:", !!nitEl);
+  
+  const direccionCiudad = direccionCiudadEl?.value.trim() || "";
+  const barrio = barrioEl?.value.trim() || "";
+  const telefono = telefonoEl?.value.trim() || "";
+  const nit = nitEl?.value.trim() || "";
+  
+  console.log("📝 Valores capturados:");
+  console.log("   - Dirección, Ciudad:", direccionCiudad || "(vacío)");
+  console.log("   - Barrio:", barrio || "(vacío)");
+  console.log("   - Teléfono:", telefono || "(vacío)");
+  console.log("   - NIT:", nit || "(vacío)");
+  
   const paymentMethod =
     document.getElementById("paymentMethodInvoice")?.value || "efectivo";
   const installmentsValue =
     document.getElementById("installmentsInvoice")?.value || "1";
   const installments =
     paymentMethod === "tarjeta" ? parseInt(installmentsValue, 10) : null;
+    
+  console.log("💳 Método de pago:", paymentMethod);
+  console.log("💰 Cuotas:", installments || "N/A");
 
   if (!businessName) {
+    console.warn("⚠️ Falta nombre del negocio");
     alert("Por favor ingresa el nombre del negocio");
     return;
   }
 
   if (invoiceItems.length === 0) {
+    console.warn("⚠️ No hay productos en la factura");
     alert("Por favor agrega al menos un producto a la factura");
     return;
   }
@@ -2006,11 +2279,29 @@ function finalizeInvoiceFromInventory() {
     });
     total += item.subtotal;
 
-    // Reducir inventario
+    // Reducir inventario (calcular unidades reales a descontar)
     const driverInv = inventory[date]?.[currentUser] || {};
     if (driverInv[item.product] !== undefined) {
       const previousQty = driverInv[item.product];
-      driverInv[item.product] = Math.max(0, driverInv[item.product] - item.qty);
+      
+      // Calcular unidades a descontar
+      let unitsToDeduct = item.qty;
+      if (item.unitsToDeduct !== undefined) {
+        // Usar las unidades reales guardadas
+        unitsToDeduct = item.unitsToDeduct;
+      } else {
+        // Calcular basándose en el unitLabel
+        const productInfo = productsCatalog.find((p) => p.descripcion === item.product);
+        const isPaca = normalizeUnidad(productInfo?.unidad) === "PACA";
+        if (isPaca && item.unitLabel === "PACA") {
+          const unitsPerPaca = getUnitsPerPacaFromDescription(
+            productInfo?.descripcion || item.product
+          );
+          unitsToDeduct = item.qty * unitsPerPaca;
+        }
+      }
+      
+      driverInv[item.product] = Math.max(0, driverInv[item.product] - unitsToDeduct);
 
       // Registrar movimiento de venta
       movements.push({
@@ -2018,7 +2309,7 @@ function finalizeInvoiceFromInventory() {
         type: "venta",
         driver: currentUser,
         product: item.product,
-        quantity: -item.qty,
+        quantity: -unitsToDeduct,
         previousQuantity: previousQty,
         newQuantity: driverInv[item.product],
         timestamp: new Date().toISOString(),
@@ -2028,22 +2319,6 @@ function finalizeInvoiceFromInventory() {
         delete driverInv[item.product];
       }
     }
-  });
-
-  // Guardar factura
-  if (!invoices[currentUser]) invoices[currentUser] = [];
-  invoices[currentUser].push({
-    date: date,
-    negocio: businessName,
-    direccionCiudad: direccionCiudad,
-    barrio: barrio,
-    telefono: telefono,
-    nit: nit,
-    paymentMethod: paymentMethod,
-    installments: installments,
-    items: saleItems,
-    total: total,
-    timestamp: new Date().toISOString(),
   });
 
   // Crear objeto de factura
@@ -2061,14 +2336,30 @@ function finalizeInvoiceFromInventory() {
     timestamp: new Date().toISOString(),
   };
 
-  // Guardar factura
+  console.log("📦 Objeto de factura creado:");
+  console.log("   - Negocio:", invoice.negocio);
+  console.log("   - Dirección:", invoice.direccionCiudad || "(vacío)");
+  console.log("   - Barrio:", invoice.barrio || "(vacío)");
+  console.log("   - Teléfono:", invoice.telefono || "(vacío)");
+  console.log("   - NIT:", invoice.nit || "(vacío)");
+  console.log("   - Método de pago:", invoice.paymentMethod);
+  console.log("   - Cuotas:", invoice.installments || "N/A");
+  console.log("   - Total items:", invoice.items.length);
+  console.log("   - Total:", invoice.total);
+
+  // Guardar factura (SOLO UNA VEZ - BUG CORREGIDO)
   if (!invoices[currentUser]) invoices[currentUser] = [];
   invoices[currentUser].push(invoice);
 
   saveData();
 
+  console.log("✅ Factura guardada correctamente");
+  console.log("🖨️ Generando PDF...");
+
   // Generar y descargar PDF
   generateInvoicePDF(invoice);
+
+  console.log("🧹 Limpiando formulario...");
 
   // Limpiar formulario
   invoiceItems = [];
@@ -2194,20 +2485,47 @@ function updateSaleTotal() {
 }
 
 function finalizeSale() {
-  const businessName = document.getElementById("businessName").value.trim();
-  const direccionCiudad =
-    document.getElementById("direccionCiudad")?.value.trim() || "";
-  const barrio = document.getElementById("barrio")?.value.trim() || "";
-  const telefono = document.getElementById("telefono")?.value.trim() || "";
-  const nit = document.getElementById("nit")?.value.trim() || "";
+  console.log("🧾 ===== INICIANDO FINALIZAR VENTA (Módulo VENTAS) =====");
+  
+  // Capturar nombre del negocio
+  const businessNameEl = document.getElementById("businessName");
+  console.log("📍 Campo businessName existe:", !!businessNameEl);
+  const businessName = businessNameEl?.value.trim() || "";
+  console.log("   Valor:", businessName || "(vacío)");
+  
+  // Capturar datos del cliente
+  const direccionCiudadEl = document.getElementById("direccionCiudad");
+  const barrioEl = document.getElementById("barrio");
+  const telefonoEl = document.getElementById("telefono");
+  const nitEl = document.getElementById("nit");
+  
+  console.log("📍 Verificando campos del cliente:");
+  console.log("   - direccionCiudad existe:", !!direccionCiudadEl);
+  console.log("   - barrio existe:", !!barrioEl);
+  console.log("   - telefono existe:", !!telefonoEl);
+  console.log("   - nit existe:", !!nitEl);
+  
+  const direccionCiudad = direccionCiudadEl?.value.trim() || "";
+  const barrio = barrioEl?.value.trim() || "";
+  const telefono = telefonoEl?.value.trim() || "";
+  const nit = nitEl?.value.trim() || "";
+  
+  console.log("📝 Valores capturados:");
+  console.log("   - Dirección, Ciudad:", direccionCiudad || "(vacío)");
+  console.log("   - Barrio:", barrio || "(vacío)");
+  console.log("   - Teléfono:", telefono || "(vacío)");
+  console.log("   - NIT:", nit || "(vacío)");
+  
   const items = document.querySelectorAll(".sale-item");
 
   if (!businessName) {
+    console.warn("⚠️ Falta nombre del negocio");
     alert("Ingresa el nombre del negocio");
     return;
   }
 
   if (items.length === 0) {
+    console.warn("⚠️ No hay productos en la venta");
     alert("Agrega al menos un producto a la venta");
     return;
   }
@@ -2275,11 +2593,23 @@ function finalizeSale() {
     timestamp: new Date().toISOString(),
   };
 
+  console.log("📦 Objeto de factura creado:");
+  console.log("   - Negocio:", invoice.negocio);
+  console.log("   - Dirección:", invoice.direccionCiudad || "(vacío)");
+  console.log("   - Barrio:", invoice.barrio || "(vacío)");
+  console.log("   - Teléfono:", invoice.telefono || "(vacío)");
+  console.log("   - NIT:", invoice.nit || "(vacío)");
+  console.log("   - Total items:", invoice.items.length);
+  console.log("   - Total:", invoice.total);
+
   // Guardar factura
   if (!invoices[currentUser]) invoices[currentUser] = [];
   invoices[currentUser].push(invoice);
 
   saveData();
+
+  console.log("✅ Factura guardada correctamente");
+  console.log("🖨️ Generando PDF...");
 
   // Generar y descargar PDF
   generateInvoicePDF(invoice);
@@ -2301,15 +2631,27 @@ function finalizeSale() {
    GENERAR PDF DE FACTURA
 ========================= */
 function generateInvoicePDF(invoice) {
+  console.log("📄 ===== GENERANDO PDF DE FACTURA =====");
+  console.log("📦 Datos de factura recibidos:");
+  console.log("   - Negocio:", invoice?.negocio || "(sin datos)");
+  console.log("   - Dirección:", invoice?.direccionCiudad || "(sin datos)");
+  console.log("   - Barrio:", invoice?.barrio || "(sin datos)");
+  console.log("   - Teléfono:", invoice?.telefono || "(sin datos)");
+  console.log("   - NIT:", invoice?.nit || "(sin datos)");
+  console.log("   - Fecha:", invoice?.date || "(sin datos)");
+  console.log("   - Total:", invoice?.total || 0);
+  console.log("   - Items:", invoice?.items?.length || 0);
+  
   // Verificar que jsPDF esté disponible
   if (typeof window.jspdf === "undefined") {
-    console.error("jsPDF no está disponible");
+    console.error("❌ jsPDF no está disponible");
     alert(
       "Error: No se pudo generar el PDF. La biblioteca jsPDF no está cargada."
     );
     return;
   }
 
+  console.log("✅ jsPDF está disponible");
   const { jsPDF } = window.jspdf;
   const doc = new jsPDF();
 
@@ -2952,34 +3294,311 @@ function downloadInvoicePDFFromList(index) {
   generateInvoicePDF(invoice);
 }
 
-function downloadInvoicePDFForCoordinator(driver, index) {
-  // Obtener las facturas del conductor
-  const driverInvoices = invoices[driver] || [];
+function escapeCsvValue(value) {
+  const str = value === null || value === undefined ? "" : String(value);
+  if (/[",\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
 
-  if (!driverInvoices || driverInvoices.length === 0) {
-    alert("Error: No se encontraron facturas para este conductor");
+function downloadXlsxFile(rows, fileName) {
+  console.log("📊 Iniciando descarga de Excel:", fileName);
+  
+  // Verificar que la librería XLSX esté cargada
+  if (typeof XLSX === "undefined") {
+    console.error("❌ XLSX no está definido");
+    alert("⚠️ La librería de Excel no está cargada.\n\nPor favor:\n1. Verifica tu conexión a internet\n2. Recarga la página (F5)\n3. Intenta nuevamente\n\nSi el problema persiste, contacta al administrador.");
     return;
   }
 
-  // Las facturas están en orden cronológico, pero las mostramos en reverso
-  // Por lo tanto, necesitamos calcular el índice correcto
-  const reversedIndex = driverInvoices.length - 1 - index;
-  const invoice = driverInvoices[reversedIndex];
+  try {
+    console.log("✅ XLSX está disponible. Versión:", XLSX.version || "desconocida");
+    console.log("📝 Creando hoja de cálculo con", rows.length, "filas");
+    
+    // Validar que rows tenga datos
+    if (!rows || rows.length === 0) {
+      console.error("❌ No hay datos para exportar");
+      alert("Error: No hay datos para exportar.");
+      return;
+    }
+    
+    // Crear la hoja de cálculo
+    const worksheet = XLSX.utils.aoa_to_sheet(rows);
+    
+    if (!worksheet["!ref"]) {
+      console.error("❌ La hoja de cálculo no se creó correctamente");
+      alert("Error al crear la hoja de cálculo. Por favor, intenta nuevamente.");
+      return;
+    }
+    
+    // Obtener el rango de celdas
+    const range = XLSX.utils.decode_range(worksheet["!ref"]);
+    console.log("📏 Rango de celdas:", range);
+    console.log("   - Filas:", range.s.r, "a", range.e.r);
+    console.log("   - Columnas:", range.s.c, "a", range.e.c);
+    
+    // Configurar anchos de columna optimizados
+    console.log("📐 Calculando anchos de columna...");
+    const colWidths = [];
+    for (let col = range.s.c; col <= range.e.c; col++) {
+      let maxWidth = 10;
+      for (let row = range.s.r; row <= Math.min(range.e.r, range.s.r + 100); row++) {
+        const cellAddress = XLSX.utils.encode_cell({ r: row, c: col });
+        const cell = worksheet[cellAddress];
+        if (cell && cell.v) {
+          const cellLength = String(cell.v).length;
+          maxWidth = Math.max(maxWidth, Math.min(cellLength + 2, 50));
+        }
+      }
+      colWidths.push({ wch: maxWidth });
+    }
+    worksheet['!cols'] = colWidths;
+    console.log("✅ Anchos de columna configurados");
+    
+    // Intentar aplicar estilos si está disponible (solo con xlsx-js-style)
+    try {
+      // Verificar si la librería soporta estilos
+      const testCell = worksheet[XLSX.utils.encode_cell({ r: 0, c: 0 })];
+      if (testCell) {
+        console.log("🎨 Intentando aplicar estilos al encabezado...");
+        
+        const headerStyle = {
+          font: { bold: true, color: { rgb: "FFFFFF" } },
+          fill: { fgColor: { rgb: "4472C4" } },
+          alignment: { horizontal: "center", vertical: "center" },
+          border: {
+            top: { style: "thin", color: { rgb: "000000" } },
+            right: { style: "thin", color: { rgb: "000000" } },
+            bottom: { style: "thin", color: { rgb: "000000" } },
+            left: { style: "thin", color: { rgb: "000000" } },
+          }
+        };
+        
+        // Aplicar estilo solo al encabezado
+        for (let col = range.s.c; col <= range.e.c; col++) {
+          const cellAddress = XLSX.utils.encode_cell({ r: 0, c: col });
+          if (worksheet[cellAddress]) {
+            worksheet[cellAddress].s = headerStyle;
+          }
+        }
+        console.log("✅ Estilos aplicados al encabezado");
+      }
+    } catch (styleError) {
+      console.warn("⚠️ No se pudieron aplicar estilos (versión básica de XLSX):", styleError.message);
+      // No es un error crítico, continuar sin estilos
+    }
+    
+    console.log("📦 Creando libro de trabajo...");
+    
+    // Crear el libro de trabajo
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Factura");
+    
+    console.log("💾 Guardando archivo:", fileName);
+    
+    // Descargar el archivo
+    XLSX.writeFile(workbook, fileName);
+    
+    console.log("✅ Excel descargado exitosamente:", fileName);
+    
+    // Mostrar mensaje de éxito
+    setTimeout(() => {
+      // Usar un mensaje más discreto si es posible
+      console.log("🎉 Descarga completada");
+    }, 100);
+    
+  } catch (error) {
+    console.error("❌ Error al generar Excel:", error);
+    console.error("   Stack:", error.stack);
+    
+    let errorMessage = "Error al generar el archivo Excel:\n\n";
+    errorMessage += error.message || "Error desconocido";
+    errorMessage += "\n\nPor favor:\n";
+    errorMessage += "1. Verifica tu conexión a internet\n";
+    errorMessage += "2. Recarga la página (F5)\n";
+    errorMessage += "3. Intenta nuevamente\n\n";
+    errorMessage += "Si el problema persiste, contacta al administrador.";
+    
+    alert(errorMessage);
+  }
+}
 
+function getCoordinatorInvoiceByIndex(driver, index) {
+  console.log("🔍 Buscando factura:");
+  console.log("   - Driver:", driver);
+  console.log("   - Index solicitado:", index);
+  
+  const driverInvoices = invoices[driver] || [];
+  console.log("   - Total facturas del conductor:", driverInvoices.length);
+  
+  if (!driverInvoices || driverInvoices.length === 0) {
+    console.warn("⚠️ No hay facturas para este conductor");
+    return null;
+  }
+  
+  const reversedIndex = driverInvoices.length - 1 - index;
+  console.log("   - Index invertido (más reciente primero):", reversedIndex);
+  
+  const invoice = driverInvoices[reversedIndex] || null;
+  
+  if (invoice) {
+    console.log("✅ Factura encontrada:");
+    console.log("   - Tiene direccionCiudad:", !!invoice.direccionCiudad, "→", invoice.direccionCiudad || "(vacío)");
+    console.log("   - Tiene barrio:", !!invoice.barrio, "→", invoice.barrio || "(vacío)");
+    console.log("   - Tiene telefono:", !!invoice.telefono, "→", invoice.telefono || "(vacío)");
+    console.log("   - Tiene nit:", !!invoice.nit, "→", invoice.nit || "(vacío)");
+  } else {
+    console.error("❌ Factura no encontrada en el index:", reversedIndex);
+  }
+  
+  return invoice;
+}
+
+function exportInvoiceToExcelForCoordinator(driver, index) {
+  console.log("🚀 Iniciando exportación de factura a Excel");
+  console.log("Driver:", driver, "| Index:", index);
+  
+  // Verificar permisos
+  if (currentRole !== "coordinadora") {
+    console.warn("⚠️ Usuario sin permisos para descargar facturas");
+    alert("No tienes permisos para descargar estas facturas.");
+    return;
+  }
+
+  // Obtener la factura
+  const invoice = getCoordinatorInvoiceByIndex(driver, index);
   if (!invoice) {
+    console.error("❌ Factura no encontrada para driver:", driver, "index:", index);
     alert("Error: Factura no encontrada");
     return;
+  }
+
+  console.log("✅ Factura encontrada:", invoice);
+
+  const driverName = getDriverLabel(driver);
+  console.log("👤 Nombre del conductor:", driverName);
+  
+  // Crear el array de filas para el Excel
+  const rows = [];
+  
+  // Encabezado
+  rows.push([
+    "Fecha",
+    "Conductor",
+    "Negocio",
+    "Dirección, Ciudad",
+    "Barrio",
+    "Teléfono",
+    "NIT",
+    "Método de pago",
+    "Cuotas",
+    "Producto",
+    "Código",
+    "Cantidad",
+    "Unidad",
+    "Precio",
+    "Subtotal",
+    "Total factura",
+    "Timestamp",
+  ]);
+
+  // Verificar si hay items en la factura
+  const items =
+    Array.isArray(invoice.items) && invoice.items.length > 0
+      ? invoice.items
+      : [null];
+
+  console.log("📦 Número de items en la factura:", items.length);
+
+  // Agregar cada item como una fila
+  items.forEach((item, idx) => {
+    console.log(`  Item ${idx + 1}:`, item?.product || "Sin producto");
+    
+    rows.push([
+      formatDate(invoice.date),
+      driverName,
+      invoice.negocio || "",
+      invoice.direccionCiudad || "",
+      invoice.barrio || "",
+      invoice.telefono || "",
+      invoice.nit || "",
+      invoice.paymentMethod === "tarjeta" ? "Tarjeta" : "Efectivo",
+      invoice.paymentMethod === "tarjeta" ? (invoice.installments || "") : "",
+      item?.product || "",
+      item?.codigo || "",
+      item?.qty ?? "",
+      item?.unitLabel || "",
+      item?.price ?? "",
+      item?.subtotal ?? "",
+      invoice.total ?? "",
+      invoice.timestamp || "",
+    ]);
+  });
+
+  console.log("📊 Total de filas creadas:", rows.length, "(incluyendo encabezado)");
+
+  // Crear nombre de archivo seguro
+  const safeDriver = driverName.replace(/\s/g, "_");
+  const safeBusiness = (invoice.negocio || "cliente").replace(
+    /[^a-z0-9]/gi,
+    "_"
+  );
+  const safeDate = (invoice.date || today()).replace(/-/g, "");
+  const fileName = `Factura_${safeDriver}_${safeBusiness}_${safeDate}.xlsx`;
+
+  console.log("📁 Nombre del archivo:", fileName);
+  console.log("🔄 Llamando a downloadXlsxFile...");
+
+  // Llamar a la función de descarga
+  downloadXlsxFile(rows, fileName);
+}
+
+function downloadInvoicePDFForCoordinator(driver, index) {
+  console.log("👩‍💼 ===== COORDINADORA DESCARGANDO PDF =====");
+  console.log("📍 Driver:", driver);
+  console.log("📍 Index:", index);
+  
+  // Obtener las facturas del conductor
+  const invoice = getCoordinatorInvoiceByIndex(driver, index);
+
+  if (!invoice) {
+    console.error("❌ Factura no encontrada");
+    alert("Error: Factura no encontrada");
+    return;
+  }
+
+  console.log("✅ Factura encontrada del conductor:", driver);
+  console.log("📦 Datos de la factura guardada:");
+  console.log("   - Negocio:", invoice.negocio || "(sin datos)");
+  console.log("   - Dirección:", invoice.direccionCiudad || "(sin datos) ⚠️");
+  console.log("   - Barrio:", invoice.barrio || "(sin datos) ⚠️");
+  console.log("   - Teléfono:", invoice.telefono || "(sin datos) ⚠️");
+  console.log("   - NIT:", invoice.nit || "(sin datos) ⚠️");
+  console.log("   - Fecha:", invoice.date || "(sin datos)");
+  console.log("   - Total:", invoice.total || 0);
+  console.log("   - Items:", invoice.items?.length || 0);
+  
+  if (!invoice.direccionCiudad && !invoice.barrio && !invoice.telefono && !invoice.nit) {
+    console.warn("⚠️⚠️⚠️ PROBLEMA IDENTIFICADO ⚠️⚠️⚠️");
+    console.warn("Esta factura NO tiene datos del cliente guardados.");
+    console.warn("Causa probable: El conductor NO llenó estos campos cuando generó la factura.");
+    console.warn("Solución: El conductor debe llenar los campos de cliente ANTES de generar la factura.");
   }
 
   // Guardar temporalmente el conductor para la generación del PDF
   const originalUser = currentUser;
   currentUser = driver;
 
+  console.log("🔄 Cambiando usuario temporal de", originalUser, "a", driver);
+  console.log("🖨️ Generando PDF...");
+
   // Generar PDF de la factura
   generateInvoicePDF(invoice);
 
   // Restaurar el usuario original
   currentUser = originalUser;
+  console.log("🔄 Usuario restaurado a:", originalUser);
 }
 
 /* =========================

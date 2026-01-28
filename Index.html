@@ -5,6 +5,29 @@
     <title>Conductores Pro</title>
     <link rel="stylesheet" href="styles.css" />
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <!-- Librería XLSX oficial de SheetJS con soporte para estilos -->
+    <script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+    <!-- Alternativa si la anterior falla -->
+    <script>
+      // Verificar si XLSX se cargó correctamente
+      window.addEventListener('load', function() {
+        if (typeof XLSX === 'undefined') {
+          console.error('❌ XLSX no se cargó. Intentando cargar desde CDN alternativo...');
+          var script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js';
+          script.onload = function() {
+            console.log('✅ XLSX cargado desde CDN alternativo');
+          };
+          script.onerror = function() {
+            console.error('❌ Error al cargar XLSX desde CDN alternativo');
+            alert('Error: No se pudo cargar la librería de Excel. Por favor, verifica tu conexión a internet y recarga la página.');
+          };
+          document.head.appendChild(script);
+        } else {
+          console.log('✅ XLSX cargado correctamente');
+        }
+      });
+    </script>
   </head>
 
   <body>
