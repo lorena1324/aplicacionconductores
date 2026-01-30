@@ -72,6 +72,13 @@
           Editar Precios
         </button>
         <button
+          onclick="showSection('gestionClientes')"
+          id="btnGestionClientes"
+          class="coordinator-only hidden"
+        >
+          Gestión de Clientes
+        </button>
+        <button
           id="ventasBtn"
           onclick="showSection('ventas')"
           class="driver-only"
@@ -106,7 +113,17 @@
             "
           >
             <h4 style="margin-bottom: 15px">Datos del Cliente</h4>
-
+            
+            <div class="form-row" style="margin-bottom: 15px">
+              <label style="min-width: 150px">NIT:</label>
+              <input
+                id="nit"
+                placeholder="Número de NIT"
+                class="form-input"
+                style="flex: 1"
+              />
+            </div>
+            
             <div class="form-row" style="margin-bottom: 15px">
               <label style="min-width: 150px">Dirección, Ciudad:</label>
               <input
@@ -116,7 +133,7 @@
                 style="flex: 1"
               />
             </div>
-
+            
             <div class="form-row" style="margin-bottom: 15px">
               <label style="min-width: 150px">Barrio:</label>
               <input
@@ -149,15 +166,6 @@
               />
             </div>
 
-            <div class="form-row" style="margin-bottom: 15px">
-              <label style="min-width: 150px">NIT:</label>
-              <input
-                id="nit"
-                placeholder="Número de NIT"
-                class="form-input"
-                style="flex: 1"
-              />
-            </div>
           </div>
 
           <div style="margin-bottom: 20px">
@@ -262,6 +270,13 @@
           <h2>Gestión de Precios de Productos</h2>
           <p>Edita los precios del catálogo de productos actuales.</p>
           <div id="editarPreciosContent"></div>
+        </div>
+
+        <!-- GESTIÓN DE CLIENTES (COORDINADORA) -->
+        <div id="gestionClientes" class="card hidden">
+          <h2>Gestión de Clientes</h2>
+          <p>Visualiza y administra todos los clientes registrados en el sistema.</p>
+          <div id="gestionClientesContent"></div>
         </div>
       </main>
     </div>

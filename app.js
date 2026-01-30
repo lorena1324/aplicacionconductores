@@ -36,6 +36,8 @@ let movementsTypePreset = "";
 let salesHistoryPreset = "";
 // Catálogo de productos
 let productsCatalog = [];
+// Base de datos de clientes (por NIT)
+let clients = {};
 // Timestamp para sincronización en tiempo real
 let lastSyncTimestamp = Date.now();
 
@@ -46,11 +48,13 @@ function loadData() {
   const savedInventory = localStorage.getItem("inventory");
   const savedInvoices = localStorage.getItem("invoices");
   const savedMovements = localStorage.getItem("movements");
+  const savedClients = localStorage.getItem("clients");
   const savedTimestamp = localStorage.getItem("lastSyncTimestamp");
 
   if (savedInventory) inventory = JSON.parse(savedInventory);
   if (savedInvoices) invoices = JSON.parse(savedInvoices);
   if (savedMovements) movements = JSON.parse(savedMovements);
+  if (savedClients) clients = JSON.parse(savedClients);
   if (savedTimestamp) lastSyncTimestamp = parseInt(savedTimestamp);
 }
 
@@ -246,6 +250,7 @@ function saveData() {
   localStorage.setItem("inventory", JSON.stringify(inventory));
   localStorage.setItem("invoices", JSON.stringify(invoices));
   localStorage.setItem("movements", JSON.stringify(movements));
+  localStorage.setItem("clients", JSON.stringify(clients));
   localStorage.setItem("lastSyncTimestamp", lastSyncTimestamp.toString());
   
   console.log("✅ Datos guardados en localStorage");
@@ -256,6 +261,214 @@ function saveData() {
       detail: { timestamp: lastSyncTimestamp },
     })
   );
+}
+
+/* =========================
+   GESTIÓN DE CLIENTES
+========================= */
+
+// Guardar o actualizar un cliente
+function saveClient(clientData) {
+  const nit = clientData.nit.trim();
+  
+  if (!nit) {
+    console.warn("⚠️ No se puede guardar cliente sin NIT");
+    return;
+  }
+  
+  // Verificar si es un nuevo cliente o actualización
+  const isNewClient = !clients[nit];
+  
+  clients[nit] = {
+    nit: nit,
+    businessName: clientData.businessName || "",
+    direccionCiudad: clientData.direccionCiudad || "",
+    barrio: clientData.barrio || "",
+    telefono: clientData.telefono || "",
+    lastUpdated: new Date().toISOString(),
+    createdAt: clients[nit]?.createdAt || new Date().toISOString()
+  };
+  
+  saveData();
+  
+  if (isNewClient) {
+    console.log(`✅ Cliente nuevo guardado - NIT: ${nit}`);
+  } else {
+    console.log(`✅ Cliente actualizado - NIT: ${nit}`);
+  }
+}
+
+// Buscar cliente por NIT
+function findClientByNIT(nit) {
+  const trimmedNIT = nit.trim();
+  return clients[trimmedNIT] || null;
+}
+
+// Autocompletar formulario con datos del cliente
+function autocompleteClientForm(clientData) {
+  const businessNameEl = document.getElementById("businessName");
+  const direccionCiudadEl = document.getElementById("direccionCiudad");
+  const barrioEl = document.getElementById("barrio");
+  const telefonoEl = document.getElementById("telefono");
+  
+  if (businessNameEl) businessNameEl.value = clientData.businessName || "";
+  if (direccionCiudadEl) direccionCiudadEl.value = clientData.direccionCiudad || "";
+  if (barrioEl) barrioEl.value = clientData.barrio || "";
+  if (telefonoEl) telefonoEl.value = clientData.telefono || "";
+  
+  // Agregar indicador visual de que se encontró el cliente
+  const nitEl = document.getElementById("nit");
+  if (nitEl) {
+    nitEl.style.borderColor = "#10b981";
+    nitEl.style.borderWidth = "2px";
+    
+    // Mostrar mensaje temporal
+    showClientFoundMessage(clientData.businessName);
+  }
+}
+
+// Mostrar mensaje de cliente encontrado
+function showClientFoundMessage(businessName) {
+  // Buscar si ya existe el mensaje
+  let messageEl = document.getElementById("clientFoundMessage");
+  
+  if (!messageEl) {
+    messageEl = document.createElement("div");
+    messageEl.id = "clientFoundMessage";
+    messageEl.style.cssText = `
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #10b981;
+      color: white;
+      padding: 15px 20px;
+      border-radius: 8px;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      z-index: 10000;
+      font-size: 14px;
+      font-weight: 500;
+      animation: slideIn 0.3s ease-out;
+    `;
+    document.body.appendChild(messageEl);
+  }
+  
+  messageEl.textContent = `✓ Cliente encontrado: ${businessName}`;
+  messageEl.style.display = "block";
+  
+  // Ocultar después de 3 segundos
+  setTimeout(() => {
+    messageEl.style.animation = "slideOut 0.3s ease-out";
+    setTimeout(() => {
+      messageEl.style.display = "none";
+    }, 300);
+  }, 3000);
+}
+
+// Configurar event listener para el campo NIT
+function setupNITAutocomplete() {
+  const nitEl = document.getElementById("nit");
+  
+  if (!nitEl) return;
+  
+  // Eliminar listeners previos
+  nitEl.removeEventListener("blur", handleNITBlur);
+  nitEl.removeEventListener("input", handleNITInput);
+  
+  // Agregar nuevos listeners
+  nitEl.addEventListener("blur", handleNITBlur);
+  nitEl.addEventListener("input", handleNITInput);
+}
+
+function handleNITBlur(e) {
+  const nit = e.target.value.trim();
+  
+  if (!nit) {
+    // Resetear estilo si está vacío
+    e.target.style.borderColor = "";
+    e.target.style.borderWidth = "";
+    return;
+  }
+  
+  const client = findClientByNIT(nit);
+  
+  if (client) {
+    autocompleteClientForm(client);
+  } else {
+    // Cliente no encontrado - resetear estilo
+    e.target.style.borderColor = "";
+    e.target.style.borderWidth = "";
+  }
+}
+
+function handleNITInput(e) {
+  // Resetear el estilo mientras se está escribiendo
+  e.target.style.borderColor = "";
+  e.target.style.borderWidth = "";
+}
+
+// Configurar event listener para el campo NIT del formulario de facturas (inventario)
+function setupNITAutocompleteInvoice() {
+  const nitEl = document.getElementById("nitInvoice");
+  
+  if (!nitEl) return;
+  
+  // Eliminar listeners previos
+  nitEl.removeEventListener("blur", handleNITBlurInvoice);
+  nitEl.removeEventListener("input", handleNITInputInvoice);
+  
+  // Agregar nuevos listeners
+  nitEl.addEventListener("blur", handleNITBlurInvoice);
+  nitEl.addEventListener("input", handleNITInputInvoice);
+}
+
+function handleNITBlurInvoice(e) {
+  const nit = e.target.value.trim();
+  
+  if (!nit) {
+    // Resetear estilo si está vacío
+    e.target.style.borderColor = "";
+    e.target.style.borderWidth = "";
+    return;
+  }
+  
+  const client = findClientByNIT(nit);
+  
+  if (client) {
+    autocompleteClientFormInvoice(client);
+  } else {
+    // Cliente no encontrado - resetear estilo
+    e.target.style.borderColor = "";
+    e.target.style.borderWidth = "";
+  }
+}
+
+function handleNITInputInvoice(e) {
+  // Resetear el estilo mientras se está escribiendo
+  e.target.style.borderColor = "";
+  e.target.style.borderWidth = "";
+}
+
+// Autocompletar formulario de facturas con datos del cliente
+function autocompleteClientFormInvoice(clientData) {
+  const businessNameEl = document.getElementById("businessNameInvoice");
+  const direccionCiudadEl = document.getElementById("direccionCiudadInvoice");
+  const barrioEl = document.getElementById("barrioInvoice");
+  const telefonoEl = document.getElementById("telefonoInvoice");
+  
+  if (businessNameEl) businessNameEl.value = clientData.businessName || "";
+  if (direccionCiudadEl) direccionCiudadEl.value = clientData.direccionCiudad || "";
+  if (barrioEl) barrioEl.value = clientData.barrio || "";
+  if (telefonoEl) telefonoEl.value = clientData.telefono || "";
+  
+  // Agregar indicador visual de que se encontró el cliente
+  const nitEl = document.getElementById("nitInvoice");
+  if (nitEl) {
+    nitEl.style.borderColor = "#10b981";
+    nitEl.style.borderWidth = "2px";
+    
+    // Mostrar mensaje temporal
+    showClientFoundMessage(clientData.businessName);
+  }
 }
 
 /* =========================
@@ -548,6 +761,7 @@ function showSection(panelId) {
     "controlMovimientos",
     "supervisionVentas",
     "editarPrecios",
+    "gestionClientes",
   ];
 
   const allPanels = [...commonPanels, ...coordinatorPanels];
@@ -633,6 +847,8 @@ function showSection(panelId) {
       renderHistorialVentas();
     } else if (panelId === "editarPrecios") {
       renderEditarPrecios();
+    } else if (panelId === "gestionClientes") {
+      renderGestionClientes();
     }
   } catch (error) {
     console.error(`Error al renderizar el panel ${panelId}:`, error);
@@ -959,9 +1175,12 @@ function renderInventario() {
             
             // Calcular si hay pacas completas disponibles
             let hasCompletePacas = false;
+            let showUnitsInput = false;
             if (isPaca && unitsPerPaca > 0) {
               const completePacas = Math.floor(qty / unitsPerPaca);
               hasCompletePacas = completePacas > 0;
+              // Mostrar input si hay pacas completas O si hay unidades sueltas disponibles
+              showUnitsInput = qty > 0;
             }
 
             return `
@@ -984,8 +1203,8 @@ function renderInventario() {
               <span class="qty-available" id="available-${index}">${qty}</span>
               <span class="action-buttons">
                 ${
-                  isPaca && hasCompletePacas
-                    ? `<input id="paca-units-${index}" type="number" min="1" class="form-input" placeholder="Unidades (opcional)" style="width: 130px;" title="Dejar vacío para agregar una paca completa">`
+                  isPaca && showUnitsInput
+                    ? `<input id="paca-units-${index}" type="number" min="1" class="form-input" placeholder="${hasCompletePacas ? 'Unidades (opcional)' : 'Unidades'}" style="width: 130px;" title="${hasCompletePacas ? 'Dejar vacío para agregar una paca completa' : 'Ingresa cantidad de unidades sueltas'}">`
                     : ""
                 }
                 <button onclick="addToInvoice('${product}', ${index}, ${unitPrice})" 
@@ -1003,6 +1222,11 @@ function renderInventario() {
       <div class="invoice-section" style="margin-top: 30px; padding-top: 25px; border-top: 2px solid #e2e8f0;">
         <h4>Datos del Cliente</h4>
         <div class="invoice-form">
+        <div class="form-row" style="margin-bottom: 15px;">
+          <label style="min-width: 150px;">NIT:</label>
+          <input id="nitInvoice" placeholder="Número de NIT" 
+                 class="form-input" style="flex: 1;">
+        </div>
           <div class="form-row" style="margin-bottom: 15px;">
             <label style="min-width: 150px;">Dirección, Ciudad:</label>
             <input id="direccionCiudadInvoice" placeholder="Dirección y ciudad del cliente" 
@@ -1027,11 +1251,6 @@ function renderInventario() {
                    class="form-input" style="flex: 1;" type="tel">
           </div>
 
-          <div class="form-row" style="margin-bottom: 15px;">
-            <label style="min-width: 150px;">NIT:</label>
-            <input id="nitInvoice" placeholder="Número de NIT" 
-                   class="form-input" style="flex: 1;">
-          </div>
 
           <div class="form-row" style="margin-bottom: 15px;">
             <label style="min-width: 150px;">Método de Pago:</label>
@@ -1081,6 +1300,11 @@ function renderInventario() {
         </div>
         </div>
       `;
+      
+      // Configurar autocompletado del NIT después de renderizar el formulario
+      setTimeout(() => {
+        setupNITAutocompleteInvoice();
+      }, 100);
   }
 }
 
@@ -2002,14 +2226,15 @@ function addToInvoice(product, index, precio) {
     const inputValue = unitsInput?.value?.trim();
     
     if (!inputValue || inputValue === "") {
-      // Si el input está vacío, agregar una paca completa
+      // Si el input está vacío, agregar una paca completa (si hay disponible)
+      console.log("completePacas", completePacas);
       if (completePacas > 0) {
         unitsToDeduct = unitsPerPaca;
         displayQty = 1; // 1 paca
         displayUnitLabel = "PACA";
         displayPrice = productInfo?.precio || precio || 0; // Precio por paca
       } else {
-        alert(`No hay pacas completas disponibles. Solo quedan ${availableQty} unidades sueltas.`);
+        alert(`No hay pacas completas disponibles. Solo quedan ${availableQty} unidades sueltas. Por favor ingresa la cantidad de unidades que deseas agregar.`);
         return;
       }
     } else {
@@ -2027,13 +2252,17 @@ function addToInvoice(product, index, precio) {
       }
       
       // Priorizar evacuar pacas completas primero
-      // Solo permitir unidades sueltas si ya no hay pacas completas disponibles
-      if (completePacas > 0 && qtyToAdd < unitsPerPaca) {
+      // Solo permitir unidades sueltas si ya no hay más de 1 paca completa disponible
+      // Si solo hay 1 paca completa o menos, permitir unidades sueltas libremente
+      if (completePacas > 1 && qtyToAdd < unitsPerPaca) {
         alert(`Debes evacuar las pacas completas primero. Hay ${completePacas} paca(s) completa(s) disponible(s). Deja el campo vacío para agregar una paca completa.`);
         return;
       }
       
-      // Unidades sueltas
+      // Unidades sueltas permitidas cuando:
+      // - No hay pacas completas (completePacas === 0)
+      // - Solo hay 1 paca completa (completePacas === 1)
+      // - O se está agregando una paca completa o más
       unitsToDeduct = qtyToAdd;
       displayQty = qtyToAdd;
       displayUnitLabel = "UND";
@@ -2307,9 +2536,16 @@ function updateAvailableQuantities() {
         const completePacas = Math.floor(available / unitsPerPaca);
         const unitsInput = document.getElementById(`paca-units-${index}`);
         if (unitsInput) {
-          if (completePacas > 0) {
+          // Mostrar input si hay unidades disponibles (pacas completas o sueltas)
+          if (available > 0) {
             unitsInput.style.display = "";
-            unitsInput.placeholder = "Unidades (opcional)";
+            if (completePacas > 0) {
+              unitsInput.placeholder = "Unidades (opcional)";
+              unitsInput.title = "Dejar vacío para agregar una paca completa";
+            } else {
+              unitsInput.placeholder = "Unidades";
+              unitsInput.title = "Ingresa cantidad de unidades sueltas";
+            }
           } else {
             unitsInput.style.display = "none";
           }
@@ -2462,6 +2698,17 @@ function finalizeInvoiceFromInventory() {
   console.log("   - Total items:", invoice.items.length);
   console.log("   - Total:", invoice.total);
 
+  // Guardar datos del cliente si se proporcionó un NIT
+  if (nit) {
+    saveClient({
+      nit: nit,
+      businessName: businessName,
+      direccionCiudad: direccionCiudad,
+      barrio: barrio,
+      telefono: telefono
+    });
+  }
+
   // Guardar factura (SOLO UNA VEZ - BUG CORREGIDO)
   if (!invoices[currentUser]) invoices[currentUser] = [];
   invoices[currentUser].push(invoice);
@@ -2482,7 +2729,12 @@ function finalizeInvoiceFromInventory() {
   document.getElementById("direccionCiudadInvoice").value = "";
   document.getElementById("barrioInvoice").value = "";
   document.getElementById("telefonoInvoice").value = "";
-  document.getElementById("nitInvoice").value = "";
+  const nitFieldInvoice = document.getElementById("nitInvoice");
+  if (nitFieldInvoice) {
+    nitFieldInvoice.value = "";
+    nitFieldInvoice.style.borderColor = "";
+    nitFieldInvoice.style.borderWidth = "";
+  }
   document.getElementById("paymentMethodInvoice").value = "efectivo";
   document.getElementById("installmentsInvoice").value = "1";
   toggleInstallmentsInvoice();
@@ -2502,6 +2754,9 @@ function finalizeInvoiceFromInventory() {
    VENTAS (CONDUCTORES)
 ========================= */
 function renderVentas() {
+  // Configurar autocompletado del NIT
+  setupNITAutocomplete();
+  
   // Actualizar select de productos cuando se carga la sección de ventas
   const saleProductSelect = document.getElementById("saleProduct");
   if (saleProductSelect && productsCatalog.length > 0) {
@@ -2717,6 +2972,17 @@ function finalizeSale() {
   console.log("   - Total items:", invoice.items.length);
   console.log("   - Total:", invoice.total);
 
+  // Guardar datos del cliente si se proporcionó un NIT
+  if (nit) {
+    saveClient({
+      nit: nit,
+      businessName: businessName,
+      direccionCiudad: direccionCiudad,
+      barrio: barrio,
+      telefono: telefono
+    });
+  }
+
   // Guardar factura
   if (!invoices[currentUser]) invoices[currentUser] = [];
   invoices[currentUser].push(invoice);
@@ -2734,7 +3000,12 @@ function finalizeSale() {
   document.getElementById("direccionCiudad").value = "";
   document.getElementById("barrio").value = "";
   document.getElementById("telefono").value = "";
-  document.getElementById("nit").value = "";
+  const nitField = document.getElementById("nit");
+  if (nitField) {
+    nitField.value = "";
+    nitField.style.borderColor = "";
+    nitField.style.borderWidth = "";
+  }
   document.getElementById("saleList").innerHTML = "";
   document.getElementById("total").textContent = "0";
 
@@ -4274,6 +4545,232 @@ function filtrarProductosPorPrecio() {
     const productText = row.textContent.toLowerCase();
     row.style.display = productText.includes(searchTerm) ? "" : "none";
   });
+}
+
+/* =========================
+   GESTIÓN DE CLIENTES
+========================= */
+function renderGestionClientes() {
+  const cont = document.getElementById("gestionClientesContent");
+  if (!cont) {
+    console.error("No se encontró el elemento gestionClientesContent");
+    return;
+  }
+
+  const clientsArray = Object.values(clients);
+  const totalClients = clientsArray.length;
+
+  cont.innerHTML = `
+    <div style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <div>
+          <h3 style="margin: 0 0 5px 0; color: #1e293b;">Base de Datos de Clientes</h3>
+          <p style="color: #64748b; font-size: 14px; margin: 0;">
+            Total: ${totalClients} cliente${totalClients !== 1 ? 's' : ''} registrado${totalClients !== 1 ? 's' : ''}
+          </p>
+        </div>
+        <button onclick="exportarClientes()" class="btn-primary" style="background: #10b981;">
+          📥 Exportar a Excel
+        </button>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <input 
+          type="text" 
+          id="buscarCliente" 
+          placeholder="Buscar por NIT, nombre del negocio, dirección..." 
+          class="form-input"
+          style="width: 100%; max-width: 500px;"
+          onkeyup="filtrarClientes()"
+        >
+      </div>
+    </div>
+
+    ${totalClients === 0 ? `
+      <div style="padding: 60px 20px; text-align: center; background: #f8fafc; border-radius: 12px; border: 2px dashed #cbd5e1;">
+        <div style="font-size: 48px; margin-bottom: 15px;">👥</div>
+        <h3 style="color: #64748b; margin: 0 0 10px 0;">No hay clientes registrados</h3>
+        <p style="color: #94a3b8; margin: 0;">
+          Los clientes se guardarán automáticamente cuando se generen facturas con sus datos.
+        </p>
+      </div>
+    ` : `
+      <div style="border: 1px solid #e2e8f0; border-radius: 12px; overflow: hidden; background: #ffffff;">
+        <div class="table-header" style="grid-template-columns: 1fr 2fr 2fr 1.5fr 1.5fr 1fr;">
+          <span>NIT</span>
+          <span>Nombre del Negocio</span>
+          <span>Dirección</span>
+          <span>Barrio</span>
+          <span>Teléfono</span>
+          <span>Acciones</span>
+        </div>
+        <div id="listaClientes" style="max-height: 600px; overflow-y: auto;">
+          ${clientsArray
+            .sort((a, b) => {
+              const dateA = new Date(a.lastUpdated || a.createdAt);
+              const dateB = new Date(b.lastUpdated || b.createdAt);
+              return dateB - dateA;
+            })
+            .map(client => `
+              <div class="table-row cliente-row" data-nit="${client.nit}" style="grid-template-columns: 1fr 2fr 2fr 1.5fr 1.5fr 1fr;">
+                <span><strong>${client.nit || 'N/A'}</strong></span>
+                <span>${client.businessName || 'Sin nombre'}</span>
+                <span>${client.direccionCiudad || 'N/A'}</span>
+                <span>${client.barrio || 'N/A'}</span>
+                <span>${client.telefono || 'N/A'}</span>
+                <span>
+                  <button 
+                    onclick="editarCliente('${client.nit}')" 
+                    class="btn-primary" 
+                    style="padding: 6px 12px; font-size: 12px;"
+                    title="Editar cliente"
+                  >
+                    ✏️ Editar
+                  </button>
+                  <button 
+                    onclick="eliminarCliente('${client.nit}')" 
+                    class="btn-delete" 
+                    style="padding: 6px 12px; font-size: 12px; margin-left: 5px;"
+                    title="Eliminar cliente"
+                  >
+                    🗑️
+                  </button>
+                </span>
+              </div>
+            `).join('')}
+        </div>
+      </div>
+    `}
+
+    <div style="margin-top: 20px; padding: 15px; background: #f8fafc; border-radius: 8px; border: 1px solid #e2e8f0;">
+      <p style="margin: 0 0 8px 0; color: #64748b; font-size: 13px;">
+        💡 <strong>Autocompletado automático:</strong> Cuando un conductor ingresa un NIT existente en el formulario de ventas,
+        todos los datos del cliente se autocompletarán automáticamente.
+      </p>
+      <p style="margin: 0; color: #64748b; font-size: 13px;">
+        📝 Los clientes se actualizan automáticamente cada vez que se genera una factura con su NIT.
+      </p>
+    </div>
+  `;
+}
+
+function filtrarClientes() {
+  const searchTerm = document.getElementById("buscarCliente")?.value.toLowerCase() || "";
+  const rows = document.querySelectorAll(".cliente-row");
+
+  rows.forEach((row) => {
+    const clientText = row.textContent.toLowerCase();
+    row.style.display = clientText.includes(searchTerm) ? "" : "none";
+  });
+}
+
+function editarCliente(nit) {
+  const client = clients[nit];
+  if (!client) {
+    alert("Cliente no encontrado");
+    return;
+  }
+
+  const newBusinessName = prompt("Nombre del Negocio:", client.businessName || "");
+  if (newBusinessName === null) return; // Cancelado
+
+  const newDireccion = prompt("Dirección, Ciudad:", client.direccionCiudad || "");
+  if (newDireccion === null) return;
+
+  const newBarrio = prompt("Barrio:", client.barrio || "");
+  if (newBarrio === null) return;
+
+  const newTelefono = prompt("Teléfono:", client.telefono || "");
+  if (newTelefono === null) return;
+
+  // Actualizar cliente
+  clients[nit] = {
+    ...client,
+    businessName: newBusinessName.trim(),
+    direccionCiudad: newDireccion.trim(),
+    barrio: newBarrio.trim(),
+    telefono: newTelefono.trim(),
+    lastUpdated: new Date().toISOString()
+  };
+
+  saveData();
+  renderGestionClientes();
+  alert("✓ Cliente actualizado correctamente");
+}
+
+function eliminarCliente(nit) {
+  const client = clients[nit];
+  if (!client) {
+    alert("Cliente no encontrado");
+    return;
+  }
+
+  const confirmacion = confirm(
+    `¿Estás seguro de eliminar el cliente?\n\n` +
+    `NIT: ${client.nit}\n` +
+    `Negocio: ${client.businessName || 'Sin nombre'}\n\n` +
+    `Esta acción no se puede deshacer.`
+  );
+
+  if (confirmacion) {
+    delete clients[nit];
+    saveData();
+    renderGestionClientes();
+    alert("✓ Cliente eliminado correctamente");
+  }
+}
+
+function exportarClientes() {
+  if (typeof XLSX === 'undefined') {
+    alert("Error: La librería de Excel no está cargada. Por favor, recarga la página.");
+    return;
+  }
+
+  const clientsArray = Object.values(clients);
+  
+  if (clientsArray.length === 0) {
+    alert("No hay clientes para exportar");
+    return;
+  }
+
+  // Preparar datos para Excel
+  const data = clientsArray.map(client => ({
+    'NIT': client.nit || '',
+    'Nombre del Negocio': client.businessName || '',
+    'Dirección, Ciudad': client.direccionCiudad || '',
+    'Barrio': client.barrio || '',
+    'Teléfono': client.telefono || '',
+    'Fecha de Registro': client.createdAt ? new Date(client.createdAt).toLocaleString('es-CO') : '',
+    'Última Actualización': client.lastUpdated ? new Date(client.lastUpdated).toLocaleString('es-CO') : ''
+  }));
+
+  // Crear libro de trabajo
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.json_to_sheet(data);
+
+  // Ajustar ancho de columnas
+  const colWidths = [
+    { wch: 15 }, // NIT
+    { wch: 30 }, // Nombre del Negocio
+    { wch: 35 }, // Dirección
+    { wch: 20 }, // Barrio
+    { wch: 15 }, // Teléfono
+    { wch: 20 }, // Fecha de Registro
+    { wch: 20 }  // Última Actualización
+  ];
+  ws['!cols'] = colWidths;
+
+  // Agregar hoja al libro
+  XLSX.utils.book_append_sheet(wb, ws, "Clientes");
+
+  // Generar nombre de archivo con fecha
+  const fecha = new Date().toLocaleDateString('es-CO').replace(/\//g, '-');
+  const filename = `Clientes_${fecha}.xlsx`;
+
+  // Descargar archivo
+  XLSX.writeFile(wb, filename);
+  
+  console.log(`✅ Archivo Excel exportado: ${filename}`);
 }
 
 /* =========================

@@ -1297,3 +1297,35 @@ body {
   top: 0;
   z-index: 10;
 }
+
+/* =========================
+   AUTOCOMPLETADO DE CLIENTES
+========================= */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOut {
+  from {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+}
+
+/* Indicador visual para el campo NIT cuando se encuentra un cliente */
+#nit.client-found {
+  border-color: #10b981;
+  border-width: 2px;
+  box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.1);
+}
